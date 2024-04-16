@@ -9,20 +9,24 @@ from .dataset_readers import readCamerasFromTxt
 from utils.general_utils import PILtoTorch, matrix_to_quaternion
 from utils.graphics_utils import getWorld2View2, getProjectionMatrix, getView2World
 
+from .shared_dataset import SharedDataset
+
 SHAPENET_DATASET_ROOT = None # Change this to your data directory
 assert SHAPENET_DATASET_ROOT is not None, "Update the location of the SRN Shapenet Dataset"
 
-class SRNDataset(Dataset):
+class SRNDataset(SharedDataset):
     def __init__(self, cfg,
                  dataset_name="train"):
         super().__init__()
         self.cfg = cfg
+
         self.dataset_name = dataset_name
+        if dataset_name == "vis":
+            self.dataset_name = "test"
 
         self.base_path = os.path.join(SHAPENET_DATASET_ROOT, "srn_{}/{}_{}".format(cfg.data.category,
-                                                                              cfg.data.category,
-                                                                              cfg.data.category,
-                                                                              dataset_name))
+                                                                                   cfg.data.category,
+                                                                                   self.dataset_name))
 
         is_chair = "chair" in cfg.data.category
         if is_chair and dataset_name == "train":
@@ -34,6 +38,8 @@ class SRNDataset(Dataset):
         self.intrins = sorted(
             glob.glob(os.path.join(self.base_path, "*", "intrinsics.txt"))
         )
+
+        print(len(self.intrins))
         if cfg.data.subset != -1:
             self.intrins = self.intrins[:cfg.data.subset]
 
@@ -107,27 +113,6 @@ class SRNDataset(Dataset):
         intrin_path = self.intrins[index]
         example_id = os.path.basename(os.path.dirname(intrin_path))
         return example_id
-
-    def make_poses_relative_to_first(self, images_and_camera_poses):
-        inverse_first_camera = images_and_camera_poses["world_view_transforms"][0].inverse().clone()
-        for c in range(images_and_camera_poses["world_view_transforms"].shape[0]):
-            images_and_camera_poses["world_view_transforms"][c] = torch.bmm(
-                                                inverse_first_camera.unsqueeze(0),
-                                                images_and_camera_poses["world_view_transforms"][c].unsqueeze(0)).squeeze(0)
-            images_and_camera_poses["view_to_world_transforms"][c] = torch.bmm(
-                                                images_and_camera_poses["view_to_world_transforms"][c].unsqueeze(0),
-                                                inverse_first_camera.inverse().unsqueeze(0)).squeeze(0)
-            images_and_camera_poses["full_proj_transforms"][c] = torch.bmm(
-                                                inverse_first_camera.unsqueeze(0),
-                                                images_and_camera_poses["full_proj_transforms"][c].unsqueeze(0)).squeeze(0)
-            images_and_camera_poses["camera_centers"][c] = images_and_camera_poses["world_view_transforms"][c].inverse()[3, :3]
-        return images_and_camera_poses
-
-    def get_source_cw2wT(self, source_cameras_view_to_world):
-        qs = []
-        for c_idx in range(source_cameras_view_to_world.shape[0]):
-            qs.append(matrix_to_quaternion(source_cameras_view_to_world[c_idx, :3, :3].transpose(0, 1)))
-        return torch.stack(qs, dim=0)
 
     def __getitem__(self, index):
         intrin_path = self.intrins[index]

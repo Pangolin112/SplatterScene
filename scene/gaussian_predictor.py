@@ -109,7 +109,7 @@ class GroupNorm(torch.nn.Module):
 
     def forward(self, x, N_views_xa=1):
         x = torch.nn.functional.group_norm(x, num_groups=self.num_groups, weight=self.weight.to(x.dtype), bias=self.bias.to(x.dtype), eps=self.eps)
-        return x
+        return x.to(memory_format=torch.channels_last)
 
 #----------------------------------------------------------------------------
 # Attention weight computation, i.e., softmax(Q^T * K).
@@ -425,35 +425,6 @@ class SongUNet(nn.Module):
                 x = block(x, emb=emb, N_views_xa=N_views_xa)
         return aux
 
-class UpscalingBlock(nn.Module):
-    def __init__(self, in_channel, out_channel):
-        super(UpscalingBlock, self).__init__()
-        self.up = nn.Upsample(scale_factor=2)
-        self.conv1 = nn.Conv2d(in_channels=in_channel, 
-                              out_channels=out_channel, 
-                              kernel_size=3,
-                              padding=1)
-        self.conv2 = nn.Conv2d(in_channels=out_channel, 
-                              out_channels=out_channel, 
-                              kernel_size=3,
-                              padding=1)
-        if in_channel != out_channel:
-            self.conv_res = nn.Conv2d(in_channels=in_channel,
-                                   out_channels=out_channel,
-                                   kernel_size=1)
-        else:
-            self.conv_res = nn.Identity()
-        self.act = nn.ReLU()
-
-    def forward(self, x):
-        x = self.up(x)
-        r = x
-        x = self.conv1(x)
-        x = self.act(x)
-        x = self.conv2(x)
-        x = self.act(x + self.conv_res(r))
-        return x
-
 # ================== End of implementation taken from EDM ===============
 # NVIDIA copyright does not apply to the code below this line
 
@@ -469,9 +440,10 @@ class SingleImageSongUNetPredictor(nn.Module):
             in_channels = 3
             emb_dim_in = 6 * cfg.cam_embd.dimension
 
-        self.encoder = SongUNet(cfg.model.base_dim, 
+        self.encoder = SongUNet(cfg.data.training_resolution, 
                                 in_channels, 
                                 sum(out_channels),
+                                model_channels=cfg.model.base_dim,
                                 num_blocks=cfg.model.num_blocks,
                                 emb_dim_in=emb_dim_in,
                                 channel_mult_noise=0,
@@ -569,8 +541,7 @@ class GaussianSplatPredictor(nn.Module):
         # for cars and chairs the focal length is fixed across dataset
         # so we can preprocess it
         # for co3d this is done on the fly
-        if self.cfg.data.category == "cars" or self.cfg.data.category == "chairs" \
-            or self.cfg.data.category == "objaverse":
+        if self.cfg.data.category not in ["hydrants", "teddybears"]:
             ray_dirs[:, :2, ...] /= fov2focal(self.cfg.data.fov * np.pi / 180, 
                                               self.cfg.data.training_resolution)
         self.register_buffer('ray_dirs', ray_dirs)
@@ -696,7 +667,7 @@ class GaussianSplatPredictor(nn.Module):
         # expands ray dirs along the batch dimension
         # adjust ray directions according to fov if not done already
         ray_dirs_xy = self.ray_dirs.expand(depth_network.shape[0], 3, *self.ray_dirs.shape[2:])
-        if self.cfg.data.category != "cars" and self.cfg.data.category != "chairs":
+        if self.cfg.data.category in ["hydrants", "teddybears"]:
             assert torch.all(focals_pixels > 0)
             ray_dirs_xy = ray_dirs_xy.clone()
             ray_dirs_xy[:, :2, ...] = ray_dirs_xy[:, :2, ...] / focals_pixels.unsqueeze(2).unsqueeze(3)
@@ -714,7 +685,8 @@ class GaussianSplatPredictor(nn.Module):
     def forward(self, x, 
                 source_cameras_view_to_world, 
                 source_cv2wT_quat=None,
-                focals_pixels=None):
+                focals_pixels=None,
+                activate_output=True):
 
         B = x.shape[0]
         N_views = x.shape[1]
@@ -731,11 +703,11 @@ class GaussianSplatPredictor(nn.Module):
         else:
             film_camera_emb = None
 
-        if self.cfg.data.category == "cars" or self.cfg.data.category == "chairs":
-            assert focals_pixels is None, "Unexpected argument for srn dataset"
-        else:
+        if self.cfg.data.category in ["hydrants", "teddybears"]:
             assert focals_pixels is not None
             focals_pixels = focals_pixels.reshape(B*N_views, *focals_pixels.shape[2:])
+        else:
+            assert focals_pixels is None, "Unexpected argument for non-co3d dataset"
 
         x = x.reshape(B*N_views, *x.shape[2:])
         if self.cfg.data.origin_distances:
@@ -745,6 +717,7 @@ class GaussianSplatPredictor(nn.Module):
             const_offset = None
 
         source_cameras_view_to_world = source_cameras_view_to_world.reshape(B*N_views, *source_cameras_view_to_world.shape[2:])
+        x = x.contiguous(memory_format=torch.channels_last)
 
         if self.cfg.model.network_with_offset:
 
@@ -780,18 +753,23 @@ class GaussianSplatPredictor(nn.Module):
         # Pos prediction is in camera space - compute the positions in the world space
         pos = self.flatten_vector(pos)
         pos = torch.cat([pos, 
-                         torch.ones((pos.shape[0], pos.shape[1], 1), device="cuda", dtype=torch.float32)
+                         torch.ones((pos.shape[0], pos.shape[1], 1), device=pos.device, dtype=torch.float32)
                          ], dim=2)
         pos = torch.bmm(pos, source_cameras_view_to_world)
         pos = pos[:, :, :3] / (pos[:, :, 3:] + 1e-10)
         
         out_dict = {
             "xyz": pos, 
-            "opacity": self.flatten_vector(self.opacity_activation(opacity)),
-            "scaling": self.flatten_vector(self.scaling_activation(scaling_out)),
             "rotation": self.flatten_vector(self.rotation_activation(rotation)),
             "features_dc": self.flatten_vector(features_dc).unsqueeze(2)
                 }
+
+        if activate_output:
+            out_dict["opacity"] = self.flatten_vector(self.opacity_activation(opacity))
+            out_dict["scaling"] = self.flatten_vector(self.scaling_activation(scaling_out))
+        else:
+            out_dict["opacity"] = self.flatten_vector(opacity)
+            out_dict["scaling"] = self.flatten_vector(scaling_out)
 
         assert source_cv2wT_quat is not None
         source_cv2wT_quat = source_cv2wT_quat.reshape(B*N_views, *source_cv2wT_quat.shape[2:])

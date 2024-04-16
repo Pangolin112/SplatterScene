@@ -1,0 +1,17 @@
+# @package _global_
+general:
+  num_devices: 2
+  mixed_precision: true
+
+data:
+  znear: 0.8
+  zfar: 3.2
+  category: objaverse
+  white_background: true
+  origin_distances: false
+  training_resolution: 128
+  fov: 49.134342641202636
+
+opt:
+  batch_size: 16
+  iterations: 350001

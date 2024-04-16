@@ -2,6 +2,7 @@
 data:
   znear: 0.8
   zfar: 1.8
+  fov: 51.98948897809546
   category: cars
   white_background: true
   origin_distances: false

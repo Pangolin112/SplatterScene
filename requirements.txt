@@ -9,3 +9,7 @@ einops
 imageio
 wandb
 moviepy
+lightning==2.0
+markupsafe==2.0.1
+gradio
+huggingface_hub

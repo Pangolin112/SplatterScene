@@ -24,7 +24,7 @@ def render_predicted(pc : dict,
     """
  
     # Create zero tensor. We will use it to make pytorch return gradients of the 2D (screen-space) means
-    screenspace_points = torch.zeros_like(pc["xyz"], dtype=pc["xyz"].dtype, requires_grad=True, device="cuda") + 0
+    screenspace_points = torch.zeros_like(pc["xyz"], dtype=pc["xyz"].dtype, requires_grad=True, device=pc["xyz"].device) + 0
     try:
         screenspace_points.retain_grad()
     except:

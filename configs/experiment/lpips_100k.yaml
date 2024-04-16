@@ -1,0 +1,6 @@
+# @package _global_
+opt:
+  iterations: 100001
+  pretrained_ckpt: null
+  lambda_lpips: 0.01
+  base_lr: 0.000005

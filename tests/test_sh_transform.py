@@ -6,7 +6,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from scene.gaussian_predictor import GaussianSplatPredictor
-from scene.srn import SRNDataset
+from datasets.srn import SRNDataset
 from utils.sh_utils import eval_sh
 
 @torch.no_grad()

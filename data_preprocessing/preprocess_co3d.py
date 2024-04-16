@@ -8,10 +8,9 @@ import tqdm
 from PIL import Image
 from omegaconf import DictConfig
 
+from pytorch3d.renderer.camera_utils import join_cameras_as_batch
 from pytorch3d.implicitron.dataset.json_index_dataset_map_provider_v2 import JsonIndexDatasetMapProviderV2
 from pytorch3d.implicitron.tools.config import expand_args_fields
-
-from .co3d_normalisation import normalize_sequence
 
 CO3D_RAW_ROOT = None # change to where your CO3D data resides
 CO3D_OUT_ROOT = None # change to your folder here
@@ -74,10 +73,10 @@ def main(dataset_name, category):
         fname_order = []
 
         # Preprocess cameras with Viewset Diffusion protocol
-        normalized_cameras, _, _, _, _ = normalize_sequence(created_dataset, sequence_name, 1.2)
+        cameras_this_seq = read_seq_cameras(created_dataset, sequence_name)
             
-        camera_Rs_all_sequences[sequence_name] = normalized_cameras.R
-        camera_Ts_all_sequences[sequence_name] = normalized_cameras.T
+        camera_Rs_all_sequences[sequence_name] = cameras_this_seq.R
+        camera_Ts_all_sequences[sequence_name] = cameras_this_seq.T
 
         while True:
             try:
@@ -225,6 +224,25 @@ def crop_image_at_non_integer_locations(img,
     grid_locations[:, :, 0] = ( grid_locations[:, :, 0] - img.shape[2] / 2 ) / ( img.shape[2] / 2 )
     image_crop = torch.nn.functional.grid_sample(img.unsqueeze(0), grid_locations.unsqueeze(0))
     return image_crop.squeeze(0)
+
+def read_seq_cameras(dataset, sequence_name):
+
+    frame_idx_gen = dataset.sequence_indices_in_order(sequence_name)
+    frame_idxs = []
+    while True:
+        try:
+            frame_idx = next(frame_idx_gen)
+            frame_idxs.append(frame_idx)
+        except StopIteration:
+            break
+
+    cameras_start = []
+    for frame_idx in frame_idxs:
+        cameras_start.append(dataset[frame_idx].camera)
+    cameras_start = join_cameras_as_batch(cameras_start)
+    cameras = cameras_start.clone()
+
+    return cameras
 
 if __name__ == "__main__":
     for category in ["teddybear", "hydrant"]:

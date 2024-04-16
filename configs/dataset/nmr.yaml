@@ -1,0 +1,17 @@
+# @package _global_
+data:
+  znear: 1.2
+  zfar: 4.0
+  category: nmr
+  white_background: true
+  origin_distances: false
+  training_resolution: 64
+  fov: 29.999999290482176
+
+model:
+  attention_resolutions:
+  - 8
+
+opt: 
+  iterations: 1240001
+  batch_size: 32

@@ -1,36 +1,42 @@
----
-defaults:
-  - wandb: defaults
-  - hydra: defaults
-  - cam_embd: defaults
-  - _self_
+wandb:
+  project: gs_pred
+cam_embd:
+  embedding: null
+  encode_embedding: null
+  dimension: 0
+  method: null
 general:
   device: 0
   random_seed: 0
-  num_devices: 1
-  mixed_precision: false
+  num_devices: 2
+  mixed_precision: true
 data:
   training_resolution: 128
+  fov: 49.134342641202636
   subset: -1
   input_images: 1
+  znear: 0.8
+  zfar: 3.2
+  category: objaverse
+  white_background: true
   origin_distances: false
 opt:
-  iterations: 800001
-  base_lr: 0.00005
-  batch_size: 8
+  iterations: 50001
+  base_lr: 6.34584421e-05
+  batch_size: 16
   betas:
-    - 0.9
-    - 0.999
+  - 0.9
+  - 0.999
   loss: l2
   imgs_per_obj: 4
-  ema: 
+  ema:
     use: true
     update_every: 10
     update_after_step: 100
     beta: 0.9999
-  lambda_lpips: 0.0
-  pretrained_ckpt: null
-
+  lambda_lpips: 0.33814373
+  start_lpips_after: 0
+  step_lr_at: -1
 model:
   max_sh_degree: 1
   inverted_x: false
@@ -38,8 +44,8 @@ model:
   name: SingleUNet
   opacity_scale: 1.0
   opacity_bias: -2.0
+  scale_scale: 0.01
   scale_bias: 0.02
-  scale_scale: 0.003
   xyz_scale: 0.1
   xyz_bias: 0.0
   depth_scale: 1.0
@@ -48,11 +54,10 @@ model:
   network_with_offset: true
   attention_resolutions:
   - 16
-  num_blocks: 4
   cross_view_attention: true
-  base_dim: 128
   isotropic: false
-
+  base_dim: 128
+  num_blocks: 4
 logging:
   ckpt_iterations: 1000
   val_log: 10000

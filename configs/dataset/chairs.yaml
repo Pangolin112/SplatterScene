@@ -2,12 +2,10 @@
 data:
   znear: 1.25
   zfar: 2.75
+  fov: 51.98948897809546
   category: chairs
   white_background: true
   origin_distances: false
-
-opt:
-  iterations: 1000001
 
 model:
   opacity_bias: -2.0

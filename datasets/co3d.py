@@ -5,8 +5,7 @@ from einops import repeat
 
 import numpy as np
 import torch
-from torchvision import transforms
-from torch.utils.data import Dataset
+
 
 from .bad_sequences import (
     NAN_SEQUENCES, 
@@ -18,6 +17,8 @@ from .bad_sequences import (
     LOW_QUALITY_SEQUENCE
     )
 
+from .shared_dataset import SharedDataset
+
 from .dataset_readers import readCamerasFromNpy
 from utils.general_utils import matrix_to_quaternion
 from utils.graphics_utils import getWorld2View2, getProjectionMatrix, getView2World, fov2focal
@@ -25,12 +26,14 @@ from utils.graphics_utils import getWorld2View2, getProjectionMatrix, getView2Wo
 CO3D_DATASET_ROOT = None # Change this to where you saved preprocessed data
 assert CO3D_DATASET_ROOT is not None, "Update the location of the CO3D Dataset"
 
-class CO3DDataset(Dataset):
+class CO3DDataset(SharedDataset):
     def __init__(self, cfg,
                  dataset_name="train"):
         super().__init__()
         self.cfg = cfg
         self.dataset_name = dataset_name
+        if dataset_name == "vis":
+            self.dataset_name = "test"
 
         # assumes cfg.data.category ends with an "s", for example hydrantS, which
         # is not included in the dataset name 
@@ -50,7 +53,7 @@ class CO3DDataset(Dataset):
             CAMERAS_FAR_AWAY_SEQUENCE[cfg.data.category[:-1]] + \
             LOW_QUALITY_SEQUENCE[cfg.data.category[:-1]]
 
-        self.read_viewset_cameras()
+        self.read_cameras()
 
         # Check that the sequence was included in the preprocessed sequences
         for frame_order_file in frame_order_files:
@@ -103,7 +106,7 @@ class CO3DDataset(Dataset):
 
         return origin_distances
 
-    def read_viewset_cameras(self):
+    def read_cameras(self):
         self.Ts = np.load(os.path.join(self.base_path, "camera_Ts.npz"))
         self.Rs = np.load(os.path.join(self.base_path, "camera_Rs.npz"))
 
@@ -197,31 +200,6 @@ class CO3DDataset(Dataset):
         intrin_path = self.frame_order_files[index]
         example_id = os.path.basename(os.path.dirname(intrin_path))
         return example_id
-
-    def make_poses_relative_to_first(self, images_and_camera_poses):
-        # Trasforms camera psoes so that the first one is identity and all other cameras
-        # are relative to the first. Transforms both rotation and translation.
-        inverse_first_camera = images_and_camera_poses["world_view_transforms"][0].inverse().clone()
-        for c in range(images_and_camera_poses["world_view_transforms"].shape[0]):
-            images_and_camera_poses["world_view_transforms"][c] = torch.bmm(
-                                                inverse_first_camera.unsqueeze(0),
-                                                images_and_camera_poses["world_view_transforms"][c].unsqueeze(0)).squeeze(0)
-            images_and_camera_poses["view_to_world_transforms"][c] = torch.bmm(
-                                                images_and_camera_poses["view_to_world_transforms"][c].unsqueeze(0),
-                                                inverse_first_camera.inverse().unsqueeze(0)).squeeze(0)
-            images_and_camera_poses["full_proj_transforms"][c] = torch.bmm(
-                                                inverse_first_camera.unsqueeze(0),
-                                                images_and_camera_poses["full_proj_transforms"][c].unsqueeze(0)).squeeze(0)
-            images_and_camera_poses["camera_centers"][c] = images_and_camera_poses["world_view_transforms"][c].inverse()[3, :3]
-        return images_and_camera_poses
-
-    def get_source_cw2wT(self, source_cameras_view_to_world):
-        # Compute view to world transforms in quaternion representation.
-        # Used for transforming predicted rotations
-        qs = []
-        for c_idx in range(source_cameras_view_to_world.shape[0]):
-            qs.append(matrix_to_quaternion(source_cameras_view_to_world[c_idx, :3, :3].transpose(0, 1)))
-        return torch.stack(qs, dim=0)
 
     def __getitem__(self, index):
         intrin_path = self.frame_order_files[index]
