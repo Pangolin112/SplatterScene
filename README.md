@@ -9,10 +9,8 @@ Official implementation of **"Splatter Image: Ultra-Fast Single-View 3D Reconstr
 - Support for multi-GPU training
 - No camera pose pre-processing in CO3D
 
-<video controls muted loop autoplay preload playsinline width="75%">
-  <source src="./demo_examples/gso_loop.mp4" type="video/mp4">
-</video>
-
+<img src="./demo_examples/demo_screenshot.png"
+            alt="Demo screenshot."/>
 # Demo
 
 Check out the online [demo](https://huggingface.co/spaces/szymanowiczs/splatter_image). Running the demo locally will often be even faster and you will be able to see the loops rendered with Gaussian Splatting (as opposed to the extracted .ply object which can show artefacts). To run the demo locally, simply follow the installation instructions below, and afterwards call:
