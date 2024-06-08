@@ -3,8 +3,8 @@ import os
 import numpy as np
 
 # Define the source and destination folders
-source_folder = '/home/qianru/Projects/TUM/TUM_2/ADL4CV/Data/ScanNetpp/data_1/0cf2e9402d/render_depth_original_size'
-destination_folder = '/home/qianru/Projects/TUM/TUM_2/ADL4CV/Data/ScanNetpp/data_1/0cf2e9402d/depth'
+source_folder = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/render_depth_original_size'
+destination_folder = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/depth'
 
 for file_name in os.listdir(source_folder):
     if file_name.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif')):  # Check for image files
@@ -22,7 +22,7 @@ for file_name in os.listdir(source_folder):
         img_array = np.array(img_resized)
 
         # Normalize the pixel values to fit within the 8-bit range (0-255)
-        img_array_normalized = (img_array - img_array.min()) / (img_array.max() - img_array.min()) * 255.0
+        img_array_normalized = (img_array - img_array.min()) / (10000.0 - img_array.min()) * 255.0
         img_array_normalized = img_array_normalized.astype(np.uint8)
 
         # Convert the normalized array back to an image in 'L' mode (8-bit pixels, black and white)

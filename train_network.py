@@ -25,18 +25,23 @@ import open3d as o3d
 
 import cv2
 
-torch.autograd.set_detect_anomaly(True)
 import matplotlib.pyplot as plt
+
+
+#########################for gradients, run much slower!!!!!!!!!!!!!!!!!!######################
+#torch.autograd.set_detect_anomaly(True)
+#########################for gradients, run much slower!!!!!!!!!!!!!!!!!!######################
+
 
 # +experiment=lpips_100k.yaml
 
 
 ############ for depth #################################
-save_iterations = 500
+save_iterations = 100
 def project_points_to_image_plane(points, K, R, t, iteration, extrinsics_direction='world_to_camera', device='cuda'):
     points = points.to(device)
     points = points.reshape(-1, 3)
-    file_path = '/home/qianru/Projects/TUM/TUM_2/ADL4CV/Data/ScanNetpp/data_1/0cf2e9402d/xyz_predicted/'
+    file_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/xyz_predicted/'
     if iteration % save_iterations == 0:
         points_clone = points.clone()
         points_np = points_clone.detach().cpu().numpy()
@@ -79,12 +84,16 @@ def visualize_depth(depths, projected_points, iteration, width=128, height=128, 
     depth_image[u, v] = torch.min(depth_image[u, v], normalized_depths)
     depth_image[depth_image == float('inf')] = 0
 
-    file_path = '/home/qianru/Projects/TUM/TUM_2/ADL4CV/Data/ScanNetpp/data_1/0cf2e9402d/depth_predicted/'
+    file_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/depth_predicted/'
     if iteration % save_iterations == 0:
-        depth_image_np = depth_image.cpu().numpy()
+        depth_image_np = depth_image.cpu().detach().numpy()
         output_image_path = file_path + 'depth_image' + str(iteration) + '.jpg'
         cv2.imwrite(output_image_path, depth_image_np)
-    return depth_image
+
+    # Create a mask for the predicted depth image where the pixel value is 0 (black pixels)
+    mask = (depth_image > 0).float()
+
+    return depth_image, mask
 
 
 def visualize_depth_gt(depths, projected_points, iteration, width=128, height=128, device='cuda'):
@@ -105,12 +114,15 @@ def visualize_depth_gt(depths, projected_points, iteration, width=128, height=12
     depth_image[u, v] = torch.min(depth_image[u, v], normalized_depths)
     depth_image[depth_image == float('inf')] = 0
 
-    file_path = '/home/qianru/Projects/TUM/TUM_2/ADL4CV/Data/ScanNetpp/data_1/0cf2e9402d/depth_from_gt/'
+    file_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/depth_from_gt/'
     if iteration % save_iterations == 0:
-        depth_image_np = depth_image.cpu().numpy()
+        depth_image_np = depth_image.cpu().detach().numpy()
         output_image_path = file_path + 'depth_image' + str(iteration) + '.jpg'
         cv2.imwrite(output_image_path, depth_image_np)
-    return depth_image
+
+    mask = (depth_image > 0).float()
+
+    return depth_image, mask
 
 
 def depth_image_to_world(depth_image, K, R, t, iteration, extrinsics_direction='world_to_camera', device='cuda'):
@@ -145,7 +157,7 @@ def depth_image_to_world(depth_image, K, R, t, iteration, extrinsics_direction='
         point_cloud = o3d.geometry.PointCloud()
         point_cloud.points = o3d.utility.Vector3dVector(points_np)
 
-        file_path = "/home/qianru/Projects/TUM/TUM_2/ADL4CV/Data/ScanNetpp/data_1/0cf2e9402d/ply_gt/" + str(iteration) + ".ply"
+        file_path = "/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/ply_gt/" + str(iteration) + ".ply"
 
         # Save the point cloud to a .ply file
         o3d.io.write_point_cloud(file_path, point_cloud)
@@ -153,49 +165,75 @@ def depth_image_to_world(depth_image, K, R, t, iteration, extrinsics_direction='
     return points_world.view(H, W, 3)
 
 
+def rotation_matrix_to_euler_angles(R):
+    assert R.shape == (3, 3), "Input rotation matrix must be 3x3"
+
+    sy = torch.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
+    singular = sy < 1e-6
+
+    if not singular:
+        x = torch.atan2(R[2, 1], R[2, 2])
+        y = torch.atan2(-R[2, 0], sy)
+        z = torch.atan2(R[1, 0], R[0, 0])
+    else:
+        x = torch.atan2(-R[1, 2], R[1, 1])
+        y = torch.atan2(-R[2, 0], sy)
+        z = 0
+
+    return torch.tensor([x, y, z])
+
+
 def align_point_clouds(source_points, target_points, iteration):
-    with torch.no_grad():
-        source_points = source_points.reshape(-1, 3)
-        target_points = target_points.reshape(-1, 3)
+    source_points = source_points.reshape(-1, 3)
+    target_points = target_points.reshape(-1, 3)
 
-        # Normalize the point clouds to unit size
-        # source_mean = torch.mean(source_points, dim=0)
-        # target_mean = torch.mean(target_points, dim=0)
-        source_mean = torch.mean(source_points, dim=0, keepdim=True)
-        target_mean = torch.mean(target_points, dim=0, keepdim=True)
 
-        source_points_normalized = source_points - source_mean
-        target_points_normalized = target_points - target_mean
+    # Normalize the point clouds to unit size
+    source_mean = torch.mean(source_points, dim=0, keepdim=True)
+    target_mean = torch.mean(target_points, dim=0, keepdim=True)
 
-        source_scale = torch.norm(source_points_normalized)
-        target_scale = torch.norm(target_points_normalized)
+    source_points_normalized = source_points - source_mean
+    target_points_normalized = target_points - target_mean
 
-        source_points_normalized /= source_scale
-        target_points_normalized /= target_scale
+    source_scale = torch.norm(source_points_normalized)
+    target_scale = torch.norm(target_points_normalized)
+    ###########################Do not use inplace operation#########################################
+    source_points_normalized = source_points_normalized / source_scale
+    target_points_normalized = target_points_normalized / target_scale
+    ###########################Do not use inplace operation#########################################
 
-        # Apply Procrustes Analysis for scaling and rotation
-        M = torch.mm(source_points_normalized.t(), target_points_normalized)
-        U, S, Vt = torch.svd(M)
-        R = torch.mm(U, Vt.t())
+    # Apply Procrustes Analysis for scaling and rotation
+    M = torch.mm(source_points_normalized.t(), target_points_normalized)
+    U, S, Vt = torch.svd(M)
+    R = torch.mm(U, Vt.t())
 
-        source_points_aligned = torch.mm(source_points_normalized, R)
+    # with torch.no_grad():
+    source_points_aligned = torch.mm(source_points_normalized, R)
 
-        # Scale back and translate
-        source_points_aligned = source_points_aligned * target_scale + target_mean
+    # Scale back and translate
+    source_points_aligned_final = source_points_aligned * target_scale + target_mean
 
-        if iteration % save_iterations == 0:
-            points_np = source_points_aligned.detach().cpu().numpy()
+    if iteration % save_iterations == 0:
+        points_np = source_points_aligned_final.detach().cpu().numpy()
 
-            # Create an Open3D point cloud object
-            point_cloud = o3d.geometry.PointCloud()
-            point_cloud.points = o3d.utility.Vector3dVector(points_np)
+        # Create an Open3D point cloud object
+        point_cloud = o3d.geometry.PointCloud()
+        point_cloud.points = o3d.utility.Vector3dVector(points_np)
 
-            file_path = "/home/qianru/Projects/TUM/TUM_2/ADL4CV/Data/ScanNetpp/data_1/0cf2e9402d/aligned_predicted_ply/" + str(iteration) + ".ply"
+        file_path = "/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/aligned_predicted_ply/" + str(iteration) + ".ply"
 
-            # Save the point cloud to a .ply file
-            o3d.io.write_point_cloud(file_path, point_cloud)
+        # Save the point cloud to a .ply file
+        o3d.io.write_point_cloud(file_path, point_cloud)
 
-    return source_points_aligned
+    # translation_matrix = target_mean - torch.mm(source_mean, R.t()) * target_scale
+    # euler_angles = rotation_matrix_to_euler_angles(R)
+    # print("Rotation Matrix:", R)
+    # print("Translation Matrix:", translation_matrix)
+    # print("Euler Angles (rad):", euler_angles)
+    # print("Euler Angles (deg):", euler_angles * 180 / torch.pi)
+
+    return source_points_aligned_final
+
 
 
 
@@ -240,12 +278,12 @@ def main(cfg: DictConfig):
 
     l = []
     if cfg.model.network_with_offset:
-        l.append({'params': gaussian_predictor.network_with_offset.parameters(), 
+        l.append({'params': gaussian_predictor.network_with_offset.parameters(),
          'lr': cfg.opt.base_lr})
     if cfg.model.network_without_offset:
-        l.append({'params': gaussian_predictor.network_wo_offset.parameters(), 
+        l.append({'params': gaussian_predictor.network_wo_offset.parameters(),
          'lr': cfg.opt.base_lr})
-    optimizer = torch.optim.Adam(l, lr=0.0, eps=1e-15, 
+    optimizer = torch.optim.Adam(l, lr=0.0, eps=1e-15,
                                  betas=cfg.opt.betas)
 
     # Resuming training
@@ -253,7 +291,7 @@ def main(cfg: DictConfig):
         if os.path.isfile(os.path.join(vis_dir, "model_latest.pth")):
             print('Loading an existing model from ', os.path.join(vis_dir, "model_latest.pth"))
             checkpoint = torch.load(os.path.join(vis_dir, "model_latest.pth"),
-                                    map_location=device) 
+                                    map_location=device)
             try:
                 gaussian_predictor.load_state_dict(checkpoint["model_state_dict"])
             except RuntimeError:
@@ -261,25 +299,25 @@ def main(cfg: DictConfig):
                                                 strict=False)
                 print("Warning, model mismatch - was this expected?")
             first_iter = checkpoint["iteration"]
-            best_PSNR = checkpoint["best_PSNR"] 
+            best_PSNR = checkpoint["best_PSNR"]
             print('Loaded model')
         # Resuming from checkpoint
         elif cfg.opt.pretrained_ckpt is not None:
             pretrained_ckpt_dir = os.path.join(cfg.opt.pretrained_ckpt, "model_latest.pth")
             checkpoint = torch.load(pretrained_ckpt_dir,
-                                    map_location=device) 
+                                    map_location=device)
             try:
                 gaussian_predictor.load_state_dict(checkpoint["model_state_dict"])
             except RuntimeError:
                 gaussian_predictor.load_state_dict(checkpoint["model_state_dict"],
                                                 strict=False)
-            best_PSNR = checkpoint["best_PSNR"] 
+            best_PSNR = checkpoint["best_PSNR"]
             print('Loaded model from a pretrained checkpoint')
         else:
             best_PSNR = 0.0
 
     if cfg.opt.ema.use and fabric.is_global_zero:
-        ema = EMA(gaussian_predictor, 
+        ema = EMA(gaussian_predictor,
                   beta=cfg.opt.ema.beta,
                   update_every=cfg.opt.ema.update_every,
                   update_after_step=cfg.opt.ema.update_after_step)
@@ -307,14 +345,14 @@ def main(cfg: DictConfig):
         persistent_workers = False
 
     dataset = get_dataset(cfg, "train")
-    dataloader = DataLoader(dataset, 
+    dataloader = DataLoader(dataset,
                             batch_size=cfg.opt.batch_size,
                             shuffle=True,
                             num_workers=num_workers,
                             persistent_workers=persistent_workers)
 
     val_dataset = get_dataset(cfg, "val")
-    val_dataloader = DataLoader(val_dataset, 
+    val_dataloader = DataLoader(val_dataset,
                                 batch_size=1,
                                 shuffle=False,
                                 num_workers=1,
@@ -322,16 +360,16 @@ def main(cfg: DictConfig):
                                 pin_memory=True)
 
     test_dataset = get_dataset(cfg, "vis")
-    test_dataloader = DataLoader(test_dataset, 
+    test_dataloader = DataLoader(test_dataset,
                                  batch_size=1,
                                  shuffle=True)
-    
+
     # distribute model and training dataset
     gaussian_predictor, optimizer = fabric.setup(
         gaussian_predictor, optimizer
     )
     dataloader = fabric.setup_dataloaders(dataloader)
-    
+
     gaussian_predictor.train()
 
     print("Beginning training")
@@ -339,7 +377,7 @@ def main(cfg: DictConfig):
     iteration = first_iter
 
     for num_epoch in range((cfg.opt.iterations + 1 - first_iter) // len(dataloader) + 1):
-        dataloader.sampler.set_epoch(num_epoch)        
+        dataloader.sampler.set_epoch(num_epoch)
 
         for data in dataloader:
             iteration += 1
@@ -414,20 +452,26 @@ def main(cfg: DictConfig):
                     R = data["Rs"][b_idx, r_idx]
                     T = data["Ts"][b_idx, r_idx]
                     projected_points, predicted_depths = project_points_to_image_plane(aligned_points, K, R, T, iteration)
-                    predicted_depth_image = visualize_depth(predicted_depths, projected_points, iteration)
-                    predicted_depth_images.append(predicted_depth_image)
+                    predicted_depth_image, mask_predicted = visualize_depth(predicted_depths, projected_points, iteration)
+
                     # ============ Gradients ===============
                     #predicted_depth_images.append(predicted_depth_image.detach().requires_grad_())
                     # ============ Gradients ===============
                     # gt_depth_image = data["gt_depths"][b_idx, r_idx]
                     # ============ Does not use the gt depth of each view but the reprojected point of input depth ===============
                     reprojected_gt_points, reprojected_gt_depths = project_points_to_image_plane(gt_points, K, R, T, iteration)
-                    gt_depth_image = visualize_depth_gt(reprojected_gt_depths, reprojected_gt_points, iteration)
+                    gt_depth_image, mask_gt = visualize_depth_gt(reprojected_gt_depths, reprojected_gt_points, iteration)
                     # ============ Does not use the gt depth of each view but the reprojected point of input depth ===============
-                    gt_depth_images.append(gt_depth_image)
+
+                    masked_gt_depth = gt_depth_image * mask_predicted
+                    gt_depth_images.append(masked_gt_depth)
+
+                    masked_predicted_depth = predicted_depth_image * mask_gt
+                    predicted_depth_images.append(masked_predicted_depth)
+
                     ############ for depth #################################
 
-                    image = render_predicted(gaussian_splat_batch, 
+                    image = render_predicted(gaussian_splat_batch,
                                         data["world_view_transforms"][b_idx, r_idx],
                                         data["full_proj_transforms"][b_idx, r_idx],
                                         data["camera_centers"][b_idx, r_idx],
@@ -458,21 +502,31 @@ def main(cfg: DictConfig):
             # ============ Gradients ===============
 
             # Loss computation
+            # reconstruction
             l12_loss_sum = loss_fn(rendered_images, gt_images)
+            # depth
             depth_loss_sum = loss_fn(predicted_depth_images, gt_depth_images)
+            # mask_predicted
+            mask_reg_loss = torch.mean(1 - mask_predicted)
 
+            # lambda coefficients
+            # lpips
             if cfg.opt.lambda_lpips != 0:
                 lpips_loss_sum = torch.mean(
                     lpips_fn(rendered_images * 2 - 1, gt_images * 2 - 1),
                     )
+            # depth
+            lambda_depth = 0.0001
+            # mask
+            lambda_mask = 0.01
 
-            lambda_depth = 0.005
 
-            # total_loss = l12_loss_sum * lambda_l12 + lpips_loss_sum * lambda_lpips + depth_loss_sum * lambda_depth
-            total_loss = l12_loss_sum * 0 + lpips_loss_sum * 0 + depth_loss_sum * lambda_depth
-            print('training loss is: ', total_loss.item())
-            print('l12 loss is     : ', l12_loss_sum.item())
-            print('depth loss is   : ', depth_loss_sum.item() * lambda_depth)
+            total_loss = l12_loss_sum * lambda_l12 + lpips_loss_sum * lambda_lpips + depth_loss_sum * lambda_depth + mask_reg_loss * lambda_mask
+            #total_loss = l12_loss_sum * 0 + lpips_loss_sum * 0 + depth_loss_sum * lambda_depth
+            print('training loss is: ', total_loss.item() * 100)
+            print('l12 loss is     : ', l12_loss_sum.item()  * 100)
+            print('depth loss is   : ', depth_loss_sum.item() * lambda_depth  * 100)
+            print('mask loss is    : ', mask_reg_loss.item() * lambda_mask  * 100)
 
             if cfg.data.category == "hydrants" or cfg.data.category == "teddybears":
                 total_loss = total_loss + big_gaussian_reg_loss + small_gaussian_reg_loss
@@ -482,14 +536,17 @@ def main(cfg: DictConfig):
             fabric.backward(total_loss)
 
             # ============ Gradients ===============
-            specific_param_name = '_forward_module.module.network_with_offset.encoder.dec.32x32_block1.conv0.weight'
-            for name, param in gaussian_predictor.named_parameters():
-                if name == specific_param_name:
-                    if param.grad is None:
-                        print(f"Iteration {iteration}: The gradient of {name} is None")
-                    else:
-                        max_grad_value = torch.max(param.grad).item()
-                        print(f"Iteration {iteration}: The max gradient value of {name} is {max_grad_value}")
+            # specific_param_name = '_forward_module.module.network_with_offset.encoder.dec.32x32_block1.conv0.weight'
+            # for name, param in gaussian_predictor.named_parameters():
+            #     if name == specific_param_name:
+            #         if param.grad is None:
+            #             print(f"Iteration {iteration}: The gradient of {name} is None")
+            #         else:
+            #             max_grad_value = torch.max(param.grad).item()
+            #             print(f"Iteration {iteration}: The max gradient value of {name} is {max_grad_value}")
+            ####################primarily use above################################
+
+
             # depth_loss_sum_gradients = []
             # for name, param in gaussian_predictor.named_parameters():
             #     if param.grad is None:
@@ -525,8 +582,10 @@ def main(cfg: DictConfig):
             with torch.no_grad():
                 if iteration % cfg.logging.loss_log == 0 and fabric.is_global_zero:
                     wandb.log({"training_loss": np.log10(total_loss.item() + 1e-8)}, step=iteration)
+                    wandb.log({"training_l12_loss": np.log10(l12_loss_sum.item() + 1e-8)}, step=iteration)
+                    wandb.log({"training_depth_loss": np.log10(depth_loss_sum.item() + 1e-8)}, step=iteration)
+                    wandb.log({"training_mask_loss": np.log10(mask_reg_loss.item() + 1e-8)}, step=iteration)
                     if cfg.opt.lambda_lpips != 0:
-                        wandb.log({"training_l12_loss": np.log10(l12_loss_sum.item() + 1e-8)}, step=iteration)
                         wandb.log({"training_lpips_loss": np.log10(lpips_loss_sum.item() + 1e-8)}, step=iteration)
                     if cfg.data.category == "hydrants" or cfg.data.category == "teddybears":
                         if type(big_gaussian_reg_loss) == float:
@@ -580,16 +639,16 @@ def main(cfg: DictConfig):
                             focals_pixels_render = vis_data["focals_pixels"][0, r_idx]
                         else:
                             focals_pixels_render = None
-                        test_image = render_predicted({k: v[0].contiguous() for k, v in gaussian_splats_vis.items()}, 
-                                            vis_data["world_view_transforms"][0, r_idx], 
-                                            vis_data["full_proj_transforms"][0, r_idx], 
+                        test_image = render_predicted({k: v[0].contiguous() for k, v in gaussian_splats_vis.items()},
+                                            vis_data["world_view_transforms"][0, r_idx],
+                                            vis_data["full_proj_transforms"][0, r_idx],
                                             vis_data["camera_centers"][0, r_idx],
                                             background,
                                             cfg,
                                             focals_pixels=focals_pixels_render)["render"]
                         test_loop_gt.append((np.clip(vis_data["gt_images"][0, r_idx].detach().cpu().numpy(), 0, 1)*255).astype(np.uint8))
                         test_loop.append((np.clip(test_image.detach().cpu().numpy(), 0, 1)*255).astype(np.uint8))
-        
+
                     wandb.log({"rot": wandb.Video(np.asarray(test_loop), fps=20, format="mp4")},
                         step=iteration)
                     wandb.log({"rot_gt": wandb.Video(np.asarray(test_loop_gt), fps=20, format="mp4")},
@@ -606,19 +665,19 @@ def main(cfg: DictConfig):
                 print("\n[ITER {}] Validating".format(iteration + 1))
                 if cfg.opt.ema.use:
                     scores = evaluate_dataset(
-                        ema, 
-                        val_dataloader, 
+                        ema,
+                        val_dataloader,
                         device=device,
                         model_cfg=cfg)
                 else:
                     scores = evaluate_dataset(
-                        gaussian_predictor, 
-                        val_dataloader, 
+                        gaussian_predictor,
+                        val_dataloader,
                         device=device,
                         model_cfg=cfg)
                 wandb.log(scores, step=iteration+1)
                 # save models - if the newest psnr is better than the best one,
-                # overwrite best_model. Always overwrite the latest model. 
+                # overwrite best_model. Always overwrite the latest model.
                 if scores["PSNR_novel"] > best_PSNR:
                     fnames_to_save.append("model_best.pth")
                     best_PSNR = scores["PSNR_novel"]
@@ -635,9 +694,9 @@ def main(cfg: DictConfig):
                                 "best_PSNR": best_PSNR
                                 }
                 if cfg.opt.ema.use:
-                    ckpt_save_dict["model_state_dict"] = ema.ema_model.state_dict()                  
+                    ckpt_save_dict["model_state_dict"] = ema.ema_model.state_dict()
                 else:
-                    ckpt_save_dict["model_state_dict"] = gaussian_predictor.state_dict() 
+                    ckpt_save_dict["model_state_dict"] = gaussian_predictor.state_dict()
                 torch.save(ckpt_save_dict, os.path.join(vis_dir, fname_to_save))
 
             gaussian_predictor.train()

@@ -12,7 +12,7 @@ from utils.graphics_utils import getWorld2View2, getProjectionMatrix, getView2Wo
 from .shared_dataset import SharedDataset
 
 #SHAPENET_DATASET_ROOT = "/home/qianru/Projects/TUM/TUM_2/ADL4CV/Data/SRN"  # Change this to your data directory
-SHAPENET_DATASET_ROOT = "/home/qianru/Projects/TUM/TUM_2/ADL4CV/Data/ScanNetpp/data_1"
+SHAPENET_DATASET_ROOT = "/media/qianru/12T_Data/Data/ScanNetpp/data_1/"
 assert SHAPENET_DATASET_ROOT is not None, "Update the location of the SRN Shapenet Dataset"
 
 class SRNDataset(SharedDataset):

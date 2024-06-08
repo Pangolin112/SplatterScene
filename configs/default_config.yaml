@@ -55,7 +55,7 @@ model:
 
 logging:
   ckpt_iterations: 1000
-  val_log: 10000
+  val_log: 5000
   loss_log: 10
-  loop_log: 10000
-  render_log: 10000
+  loop_log: 5000
+  render_log: 5000

@@ -1,7 +1,7 @@
 # @package _global_
 data:
-  znear: 0.8
-  zfar: 1.8
+  znear: 0.1
+  zfar: 10
   fov: 51.98948897809546
   category: cars
   white_background: false # this was originally 'true'
