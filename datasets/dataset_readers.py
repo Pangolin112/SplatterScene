@@ -7,6 +7,7 @@ from typing import NamedTuple
 from utils.graphics_utils import focal2fov, fov2focal
 import numpy as np
 from pathlib import Path
+import torch
 
 class CameraInfo(NamedTuple):
     uid: int
@@ -15,13 +16,15 @@ class CameraInfo(NamedTuple):
     FovY: np.array
     FovX: np.array
     image: np.array
+    depth: np.array
     image_path: str
     image_name: str
+    depth_path: str
     width: int
     height: int
 
 
-def readCamerasFromTxt(rgb_paths, pose_paths, idxs):
+def readCamerasFromTxt(rgb_paths, pose_paths, depth_paths, idxs):
     cam_infos = []
     # Transform fov from degrees to radians
     fovx = 51.98948897809546 * 2 * np.pi / 360
@@ -43,12 +46,17 @@ def readCamerasFromTxt(rgb_paths, pose_paths, idxs):
         # SRN images already are RGB with white background
         image = Image.open(image_path)
 
+        ############ for depth #################################
+        depth_path = depth_paths[idx]
+        depth = Image.open(depth_path)
+        ############ for depth #################################
+
         fovy = focal2fov(fov2focal(fovx, image.size[0]), image.size[1])
         FovY = fovy 
         FovX = fovx
 
-        cam_infos.append(CameraInfo(uid=idx, R=R, T=T, FovY=FovY, FovX=FovX, image=image,
-                        image_path=image_path, image_name=image_name, width=image.size[0], height=image.size[1]))
+        cam_infos.append(CameraInfo(uid=idx, R=R, T=T, FovY=FovY, FovX=FovX, image=image, depth=depth,
+                        image_path=image_path, image_name=image_name, depth_path=depth_path, width=image.size[0], height=image.size[1]))
         
     return cam_infos
 

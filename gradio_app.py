@@ -40,8 +40,9 @@ def main():
                     "gradio_config.yaml"
                     ))
 
-    model_path = hf_hub_download(repo_id="szymanowiczs/splatter-image-multi-category-v1", 
-                                filename="model_latest.pth")
+    model_path = hf_hub_download(repo_id="szymanowiczs/splatter-image-multi-category-v1", filename="model_cars.pth")
+
+    #model_path = '/home/qianru/Projects/TUM/TUM_2/ADL4CV/Code/splatter-image/experiments_out/2024-05-23/16-31-04/model_best.pth'
 
     model = GaussianSplatPredictor(model_cfg)
 
@@ -227,4 +228,5 @@ def main():
     demo.launch()
 
 if __name__ == "__main__":
+    print(torch.cuda.is_available())
     main()

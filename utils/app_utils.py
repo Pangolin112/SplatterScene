@@ -160,7 +160,7 @@ def export_to_obj(reconstruction, ply_out_path):
         assert v.shape[0] == 1, "Expected batch size to be 0"
         reconstruction[k] = v[0]
 
-    valid_gaussians = torch.where(reconstruction["opacity"] > -2.5)[0]
+    valid_gaussians = torch.where(reconstruction["opacity"] > -100)[0] # originally set as -2.5
 
     # transforms for visualisation in Gradio
     # ============= Transform locations =============
@@ -181,6 +181,13 @@ def export_to_obj(reconstruction, ply_out_path):
 
     xyz = torch.matmul(xyz, overall_transform_matrix).numpy()
     normals = np.zeros_like(xyz)
+
+    ### for depth extraction
+    output_file_path = '/home/qianru/Projects/TUM/TUM_2/ADL4CV/Data/ScanNetpp/data_1/0cf2e9402d/xyz.txt'
+    np.savetxt(output_file_path, xyz, delimiter=' ', fmt='%.6f', header='x y z', comments='')
+
+    print(f"Transformed points saved to {output_file_path}")
+    ### for depth extraction
 
     # ============= Transform rotations =============
     camera_transformation_matrix = overall_transform_matrix.inverse()

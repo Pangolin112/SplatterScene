@@ -23,7 +23,7 @@ from .dataset_readers import readCamerasFromNpy
 from utils.general_utils import matrix_to_quaternion
 from utils.graphics_utils import getWorld2View2, getProjectionMatrix, getView2World, fov2focal
 
-CO3D_DATASET_ROOT = None # Change this to where you saved preprocessed data
+CO3D_DATASET_ROOT = "/home/qianru/Projects/TUM/TUM_2/ADL4CV/Data/CO3D"  # Change this to where you saved preprocessed data
 assert CO3D_DATASET_ROOT is not None, "Update the location of the CO3D Dataset"
 
 class CO3DDataset(SharedDataset):

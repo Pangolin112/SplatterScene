@@ -4,7 +4,7 @@ data:
   zfar: 1.8
   fov: 51.98948897809546
   category: cars
-  white_background: true
+  white_background: false # this was originally 'true'
   origin_distances: false
 
 model:

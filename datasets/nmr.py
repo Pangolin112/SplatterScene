@@ -15,7 +15,7 @@ from utils.camera_utils import get_loop_cameras
 
 from .shared_dataset import SharedDataset
 
-NMR_DATASET_ROOT = None # Change this to your data directory
+NMR_DATASET_ROOT = "/home/qianru/Projects/TUM/TUM_2/ADL4CV/Data/NMR"  # Change this to your data directory
 assert NMR_DATASET_ROOT is not None, "Update path of the dataset"
 
 class NMRDataset(SharedDataset):

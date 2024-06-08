@@ -21,186 +21,6 @@ from gaussian_renderer import render_predicted
 from scene.gaussian_predictor import GaussianSplatPredictor
 from datasets.dataset_factory import get_dataset
 
-import open3d as o3d
-
-import cv2
-
-torch.autograd.set_detect_anomaly(True)
-import matplotlib.pyplot as plt
-
-# +experiment=lpips_100k.yaml
-
-
-############ for depth #################################
-save_iterations = 500
-def project_points_to_image_plane(points, K, R, t, iteration, extrinsics_direction='world_to_camera', device='cuda'):
-    points = points.to(device)
-    points = points.reshape(-1, 3)
-    file_path = '/home/qianru/Projects/TUM/TUM_2/ADL4CV/Data/ScanNetpp/data_1/0cf2e9402d/xyz_predicted/'
-    if iteration % save_iterations == 0:
-        points_clone = points.clone()
-        points_np = points_clone.detach().cpu().numpy()
-        txt_path = file_path + 'predicted_xyz' + str(iteration) + '.txt'
-        with open(txt_path, 'w') as f:
-            for point in points_np:
-                f.write(f"{point[0].item()} {point[1].item()} {point[2].item()}\n")
-
-    K = K.to(device)
-    R = R.to(device)
-    t = t.to(device)
-    if extrinsics_direction == 'camera_to_world':
-        R = torch.inverse(R)
-        t = -R @ t
-    ones = torch.ones((points.shape[0], 1), device=device)
-    points_homogeneous = torch.cat((points, ones), dim=1)
-    extrinsic_matrix = torch.cat((R, t.reshape(-1, 1)), dim=1)
-    points_camera = (extrinsic_matrix @ points_homogeneous.T).T
-    points_image_homogeneous = (K @ points_camera[:, :3].T).T
-    points_image = points_image_homogeneous[:, :2] / points_image_homogeneous[:, 2:]
-    depths = points_camera[:, 2]
-    return points_image, depths
-
-
-def visualize_depth(depths, projected_points, iteration, width=128, height=128, device='cuda'):
-    depths = depths.contiguous().to(device)
-    projected_points = projected_points.contiguous().to(device)
-    min_depth = torch.min(depths)
-    max_depth = torch.max(depths)
-    normalized_depths = (depths - min_depth) / (max_depth - min_depth) * 255
-    #normalized_depths = normalized_depths.to(torch.uint8)
-    depth_image = torch.full((height, width), float('inf'), dtype=torch.float32, device=device)
-    projected_points = torch.round(projected_points).long()
-    valid_mask = (projected_points[:, 0] >= 0) & (projected_points[:, 0] < width) & \
-                 (projected_points[:, 1] >= 0) & (projected_points[:, 1] < height)
-    projected_points = projected_points[valid_mask]
-    normalized_depths = normalized_depths[valid_mask]
-    v = projected_points[:, 0]
-    u = projected_points[:, 1]
-    depth_image[u, v] = torch.min(depth_image[u, v], normalized_depths)
-    depth_image[depth_image == float('inf')] = 0
-
-    file_path = '/home/qianru/Projects/TUM/TUM_2/ADL4CV/Data/ScanNetpp/data_1/0cf2e9402d/depth_predicted/'
-    if iteration % save_iterations == 0:
-        depth_image_np = depth_image.cpu().numpy()
-        output_image_path = file_path + 'depth_image' + str(iteration) + '.jpg'
-        cv2.imwrite(output_image_path, depth_image_np)
-    return depth_image
-
-
-def visualize_depth_gt(depths, projected_points, iteration, width=128, height=128, device='cuda'):
-    depths = depths.contiguous().to(device)
-    projected_points = projected_points.contiguous().to(device)
-    min_depth = torch.min(depths)
-    max_depth = torch.max(depths)
-    normalized_depths = (depths - min_depth) / (max_depth - min_depth) * 255
-    # normalized_depths = normalized_depths.to(torch.uint8)
-    depth_image = torch.full((height, width), float('inf'), dtype=torch.float32, device=device)
-    projected_points = projected_points.round().long()
-    valid_mask = (projected_points[:, 0] >= 0) & (projected_points[:, 0] < width) & \
-                 (projected_points[:, 1] >= 0) & (projected_points[:, 1] < height)
-    projected_points = projected_points[valid_mask]
-    normalized_depths = normalized_depths[valid_mask]
-    v = projected_points[:, 0]
-    u = projected_points[:, 1]
-    depth_image[u, v] = torch.min(depth_image[u, v], normalized_depths)
-    depth_image[depth_image == float('inf')] = 0
-
-    file_path = '/home/qianru/Projects/TUM/TUM_2/ADL4CV/Data/ScanNetpp/data_1/0cf2e9402d/depth_from_gt/'
-    if iteration % save_iterations == 0:
-        depth_image_np = depth_image.cpu().numpy()
-        output_image_path = file_path + 'depth_image' + str(iteration) + '.jpg'
-        cv2.imwrite(output_image_path, depth_image_np)
-    return depth_image
-
-
-def depth_image_to_world(depth_image, K, R, t, iteration, extrinsics_direction='world_to_camera', device='cuda'):
-    depth_image = depth_image.to(device)
-    if extrinsics_direction == 'camera_to_world':
-        R = torch.inverse(R)
-        t = -R @ t
-    _, H, W = depth_image.shape
-    u = torch.arange(0, W, device=device, dtype=torch.float32).view(1, -1).repeat(H, 1)
-    v = torch.arange(0, H, device=device, dtype=torch.float32).view(-1, 1).repeat(1, W)
-    u = u.view(-1)
-    v = v.view(-1)
-    depths = depth_image.view(-1)
-    uv1 = torch.stack([u, v, torch.ones_like(u)], dim=1)
-    K_inv = torch.inverse(K)
-    normalized_coords = (K_inv @ uv1.T).T
-    points_camera = normalized_coords * depths.view(-1, 1)
-    ones = torch.ones((points_camera.shape[0], 1), device=device)
-    points_camera_homogeneous = torch.cat((points_camera, ones), dim=1)
-    extrinsic_matrix = torch.cat((R, t.reshape(-1, 1)), dim=1)
-    if extrinsics_direction == 'camera_to_world':
-        extrinsic_matrix_inv = torch.inverse(extrinsic_matrix)
-    else:
-        extrinsic_matrix_inv = torch.cat((torch.inverse(R), (-torch.inverse(R) @ t).reshape(-1, 1)), dim=1)
-    points_world_homogeneous = (extrinsic_matrix_inv @ points_camera_homogeneous.T).T
-    points_world = points_world_homogeneous[:, :3]
-
-    if iteration % save_iterations == 0:
-        points_np = points_world.detach().cpu().numpy()
-
-        # Create an Open3D point cloud object
-        point_cloud = o3d.geometry.PointCloud()
-        point_cloud.points = o3d.utility.Vector3dVector(points_np)
-
-        file_path = "/home/qianru/Projects/TUM/TUM_2/ADL4CV/Data/ScanNetpp/data_1/0cf2e9402d/ply_gt/" + str(iteration) + ".ply"
-
-        # Save the point cloud to a .ply file
-        o3d.io.write_point_cloud(file_path, point_cloud)
-
-    return points_world.view(H, W, 3)
-
-
-def align_point_clouds(source_points, target_points, iteration):
-    with torch.no_grad():
-        source_points = source_points.reshape(-1, 3)
-        target_points = target_points.reshape(-1, 3)
-
-        # Normalize the point clouds to unit size
-        # source_mean = torch.mean(source_points, dim=0)
-        # target_mean = torch.mean(target_points, dim=0)
-        source_mean = torch.mean(source_points, dim=0, keepdim=True)
-        target_mean = torch.mean(target_points, dim=0, keepdim=True)
-
-        source_points_normalized = source_points - source_mean
-        target_points_normalized = target_points - target_mean
-
-        source_scale = torch.norm(source_points_normalized)
-        target_scale = torch.norm(target_points_normalized)
-
-        source_points_normalized /= source_scale
-        target_points_normalized /= target_scale
-
-        # Apply Procrustes Analysis for scaling and rotation
-        M = torch.mm(source_points_normalized.t(), target_points_normalized)
-        U, S, Vt = torch.svd(M)
-        R = torch.mm(U, Vt.t())
-
-        source_points_aligned = torch.mm(source_points_normalized, R)
-
-        # Scale back and translate
-        source_points_aligned = source_points_aligned * target_scale + target_mean
-
-        if iteration % save_iterations == 0:
-            points_np = source_points_aligned.detach().cpu().numpy()
-
-            # Create an Open3D point cloud object
-            point_cloud = o3d.geometry.PointCloud()
-            point_cloud.points = o3d.utility.Vector3dVector(points_np)
-
-            file_path = "/home/qianru/Projects/TUM/TUM_2/ADL4CV/Data/ScanNetpp/data_1/0cf2e9402d/aligned_predicted_ply/" + str(iteration) + ".ply"
-
-            # Save the point cloud to a .ply file
-            o3d.io.write_point_cloud(file_path, point_cloud)
-
-    return source_points_aligned
-
-
-
-############ for depth #################################
-
 
 @hydra.main(version_base=None, config_path='configs', config_name="default_config")
 def main(cfg: DictConfig):
@@ -384,49 +204,18 @@ def main(cfg: DictConfig):
             # Render
             l12_loss_sum = 0.0
             lpips_loss_sum = 0.0
-            depth_loss_sum = 0.0
             rendered_images = []
             gt_images = []
-            predicted_depth_images = []
-            gt_depth_images = []
             for b_idx in range(data["gt_images"].shape[0]):
                 # image at index 0 is training, remaining images are targets
                 # Rendering is done sequentially because gaussian rasterization code
                 # does not support batching
                 gaussian_splat_batch = {k: v[b_idx].contiguous() for k, v in gaussian_splats.items()}
-                ############ for depth #################################
-                points = gaussian_splat_batch["xyz"]
-                K_input = data["Ks"][b_idx, 0]
-                R_input = data["Rs"][b_idx, 0]
-                T_input = data["Ts"][b_idx, 0]
-                gt_depth_input_image = data["gt_depths"][b_idx, 0] * 255.0
-                gt_points = depth_image_to_world(gt_depth_input_image, K_input, R_input, T_input, iteration)
-                aligned_points = align_point_clouds(points, gt_points, iteration)
-                ############ for depth #################################
                 for r_idx in range(cfg.data.input_images, data["gt_images"].shape[1]):
                     if "focals_pixels" in data.keys():
                         focals_pixels_render = data["focals_pixels"][b_idx, r_idx].cpu()
                     else:
                         focals_pixels_render = None
-
-                    ############ for depth #################################
-                    K = data["Ks"][b_idx, r_idx]
-                    R = data["Rs"][b_idx, r_idx]
-                    T = data["Ts"][b_idx, r_idx]
-                    projected_points, predicted_depths = project_points_to_image_plane(aligned_points, K, R, T, iteration)
-                    predicted_depth_image = visualize_depth(predicted_depths, projected_points, iteration)
-                    predicted_depth_images.append(predicted_depth_image)
-                    # ============ Gradients ===============
-                    #predicted_depth_images.append(predicted_depth_image.detach().requires_grad_())
-                    # ============ Gradients ===============
-                    # gt_depth_image = data["gt_depths"][b_idx, r_idx]
-                    # ============ Does not use the gt depth of each view but the reprojected point of input depth ===============
-                    reprojected_gt_points, reprojected_gt_depths = project_points_to_image_plane(gt_points, K, R, T, iteration)
-                    gt_depth_image = visualize_depth_gt(reprojected_gt_depths, reprojected_gt_points, iteration)
-                    # ============ Does not use the gt depth of each view but the reprojected point of input depth ===============
-                    gt_depth_images.append(gt_depth_image)
-                    ############ for depth #################################
-
                     image = render_predicted(gaussian_splat_batch, 
                                         data["world_view_transforms"][b_idx, r_idx],
                                         data["full_proj_transforms"][b_idx, r_idx],
@@ -434,80 +223,26 @@ def main(cfg: DictConfig):
                                         background,
                                         cfg,
                                         focals_pixels=focals_pixels_render)["render"]
-
-                    # ============ Gradients ===============
-                    # Set requires_grad=True for rendered images
-                    #image.requires_grad = True
-                    # ============ Gradients ===============
-
                     # Put in a list for a later loss computation
                     rendered_images.append(image)
-                    # ============ Gradients ===============
-                    #rendered_images.append(image.detach().requires_grad_())
-                    # ============ Gradients ===============
                     gt_image = data["gt_images"][b_idx, r_idx]
                     gt_images.append(gt_image)
             rendered_images = torch.stack(rendered_images, dim=0)
             gt_images = torch.stack(gt_images, dim=0)
-            gt_depth_images = torch.stack(gt_depth_images, dim=0)
-            predicted_depth_images = torch.stack(predicted_depth_images, dim=0)
-
-            # ============ Gradients ===============
-            # Set requires_grad=True for predicted depth images
-            #predicted_depth_images.requires_grad = True
-            # ============ Gradients ===============
-
             # Loss computation
-            l12_loss_sum = loss_fn(rendered_images, gt_images)
-            depth_loss_sum = loss_fn(predicted_depth_images, gt_depth_images)
-
+            l12_loss_sum = loss_fn(rendered_images, gt_images) 
             if cfg.opt.lambda_lpips != 0:
                 lpips_loss_sum = torch.mean(
                     lpips_fn(rendered_images * 2 - 1, gt_images * 2 - 1),
                     )
 
-            lambda_depth = 0.005
-
-            # total_loss = l12_loss_sum * lambda_l12 + lpips_loss_sum * lambda_lpips + depth_loss_sum * lambda_depth
-            total_loss = l12_loss_sum * 0 + lpips_loss_sum * 0 + depth_loss_sum * lambda_depth
-            print('training loss is: ', total_loss.item())
-            print('l12 loss is     : ', l12_loss_sum.item())
-            print('depth loss is   : ', depth_loss_sum.item() * lambda_depth)
-
+            total_loss = l12_loss_sum * lambda_l12 + lpips_loss_sum * lambda_lpips
             if cfg.data.category == "hydrants" or cfg.data.category == "teddybears":
                 total_loss = total_loss + big_gaussian_reg_loss + small_gaussian_reg_loss
 
             assert not total_loss.isnan(), "Found NaN loss!"
             print("finished forward {} on process {}".format(iteration, fabric.global_rank))
             fabric.backward(total_loss)
-
-            # ============ Gradients ===============
-            specific_param_name = '_forward_module.module.network_with_offset.encoder.dec.32x32_block1.conv0.weight'
-            for name, param in gaussian_predictor.named_parameters():
-                if name == specific_param_name:
-                    if param.grad is None:
-                        print(f"Iteration {iteration}: The gradient of {name} is None")
-                    else:
-                        max_grad_value = torch.max(param.grad).item()
-                        print(f"Iteration {iteration}: The max gradient value of {name} is {max_grad_value}")
-            # depth_loss_sum_gradients = []
-            # for name, param in gaussian_predictor.named_parameters():
-            #     if param.grad is None:
-            #         print(f"Iteration {iteration}: The gradient of {name} is None")
-            #     else:
-            #         depth_loss_sum_gradients.append(param.grad)
-            #         print(f"Iteration {iteration}: The gradient of {name} is valid with shape {param.grad.shape}")
-            #
-            # # Check if depth_loss_sum gradient is None
-            # if len(depth_loss_sum_gradients) == 0:
-            #     print(f"Iteration {iteration}: No gradients found for depth_loss_sum")
-            # else:
-            #     print(f"Iteration {iteration}: Gradients found for depth_loss_sum")
-            #rgb_gradient = rendered_images.grad.clone() if rendered_images.grad is not None else None
-            #depth_gradient = predicted_depth_images.grad.clone() if predicted_depth_images.grad is not None else None
-            #print('RGB Gradient: ', rgb_gradient)
-            #print('Depth Gradient: ', depth_gradient)
-            # ============ Gradients ===============
 
             # ============ Optimization ===============
             optimizer.step()
@@ -594,8 +329,6 @@ def main(cfg: DictConfig):
                         step=iteration)
                     wandb.log({"rot_gt": wandb.Video(np.asarray(test_loop_gt), fps=20, format="mp4")},
                         step=iteration)
-            torch.cuda.empty_cache()
-
 
             fnames_to_save = []
             # Find out which models to save
