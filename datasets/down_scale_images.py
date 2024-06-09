@@ -3,8 +3,8 @@ import os
 import numpy as np
 
 # Define the source and destination folders
-source_folder = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/render_depth_original_size'
-destination_folder = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/depth'
+source_folder = '/home/philipsdeng/文档/Data/data_1/0cf2e9402d/render_depth_original_size'
+destination_folder = '/home/philipsdeng/文档/Data/data_1/0cf2e9402d/depth'
 
 for file_name in os.listdir(source_folder):
     if file_name.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif')):  # Check for image files

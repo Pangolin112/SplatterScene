@@ -38,10 +38,29 @@ import matplotlib.pyplot as plt
 
 ############ for depth #################################
 save_iterations = 100
+
+
+
+def clear_directory(dir_path):
+    for filename in os.listdir(dir_path):
+        file_path = os.path.join(dir_path, filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)
+        except Exception as e:
+            print(f'Failed to delete {file_path}. Reason: {e}')
+
+
+
+
 def project_points_to_image_plane(points, K, R, t, iteration, extrinsics_direction='world_to_camera', device='cuda'):
     points = points.to(device)
     points = points.reshape(-1, 3)
-    file_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/xyz_predicted/'
+    file_path = '/home/philipsdeng/文档/Data/data_1/0cf2e9402d/xyz_predicted/'
+    if iteration ==1:
+        clear_directory(file_path)
     if iteration % save_iterations == 0:
         points_clone = points.clone()
         points_np = points_clone.detach().cpu().numpy()
@@ -83,8 +102,9 @@ def visualize_depth(depths, projected_points, iteration, width=128, height=128, 
     u = projected_points[:, 1]
     depth_image[u, v] = torch.min(depth_image[u, v], normalized_depths)
     depth_image[depth_image == float('inf')] = 0
-
-    file_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/depth_predicted/'
+    file_path = '/home/philipsdeng/文档/Data/data_1/0cf2e9402d/depth_predicted/'
+    if iteration == 1:
+        clear_directory(file_path)
     if iteration % save_iterations == 0:
         depth_image_np = depth_image.cpu().detach().numpy()
         output_image_path = file_path + 'depth_image' + str(iteration) + '.jpg'
@@ -113,8 +133,9 @@ def visualize_depth_gt(depths, projected_points, iteration, width=128, height=12
     u = projected_points[:, 1]
     depth_image[u, v] = torch.min(depth_image[u, v], normalized_depths)
     depth_image[depth_image == float('inf')] = 0
-
-    file_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/depth_from_gt/'
+    file_path = '/home/philipsdeng/文档/Data/data_1/0cf2e9402d/depth_from_gt/'
+    if iteration == 1:
+        clear_directory(file_path)
     if iteration % save_iterations == 0:
         depth_image_np = depth_image.cpu().detach().numpy()
         output_image_path = file_path + 'depth_image' + str(iteration) + '.jpg'
@@ -149,7 +170,9 @@ def depth_image_to_world(depth_image, K, R, t, iteration, extrinsics_direction='
         extrinsic_matrix_inv = torch.cat((torch.inverse(R), (-torch.inverse(R) @ t).reshape(-1, 1)), dim=1)
     points_world_homogeneous = (extrinsic_matrix_inv @ points_camera_homogeneous.T).T
     points_world = points_world_homogeneous[:, :3]
-
+    file_path = "/home/philipsdeng/文档/Data/data_1/0cf2e9402d/ply_gt/"
+    if iteration == 1:
+        clear_directory(file_path)
     if iteration % save_iterations == 0:
         points_np = points_world.detach().cpu().numpy()
 
@@ -157,10 +180,10 @@ def depth_image_to_world(depth_image, K, R, t, iteration, extrinsics_direction='
         point_cloud = o3d.geometry.PointCloud()
         point_cloud.points = o3d.utility.Vector3dVector(points_np)
 
-        file_path = "/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/ply_gt/" + str(iteration) + ".ply"
+        output_file_path = file_path + str(iteration) + ".ply"
 
         # Save the point cloud to a .ply file
-        o3d.io.write_point_cloud(file_path, point_cloud)
+        o3d.io.write_point_cloud(output_file_path, point_cloud)
 
     return points_world.view(H, W, 3)
 
@@ -212,7 +235,9 @@ def align_point_clouds(source_points, target_points, iteration):
 
     # Scale back and translate
     source_points_aligned_final = source_points_aligned * target_scale + target_mean
-
+    file_path = "/home/philipsdeng/文档/Data/data_1/0cf2e9402d/aligned_predicted_ply/"
+    if iteration == 1:
+        clear_directory(file_path)
     if iteration % save_iterations == 0:
         points_np = source_points_aligned_final.detach().cpu().numpy()
 
@@ -220,10 +245,10 @@ def align_point_clouds(source_points, target_points, iteration):
         point_cloud = o3d.geometry.PointCloud()
         point_cloud.points = o3d.utility.Vector3dVector(points_np)
 
-        file_path = "/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/aligned_predicted_ply/" + str(iteration) + ".ply"
+        output_file_path=file_path + str(iteration) + ".ply"
 
         # Save the point cloud to a .ply file
-        o3d.io.write_point_cloud(file_path, point_cloud)
+        o3d.io.write_point_cloud(output_file_path, point_cloud)
 
     # translation_matrix = target_mean - torch.mm(source_mean, R.t()) * target_scale
     # euler_angles = rotation_matrix_to_euler_angles(R)
