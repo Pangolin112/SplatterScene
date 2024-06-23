@@ -183,7 +183,7 @@ def export_to_obj(reconstruction, ply_out_path):
     normals = np.zeros_like(xyz)
 
     ### for depth extraction
-    output_file_path = '/home/qianru/Projects/TUM/TUM_2/ADL4CV/Data/ScanNetpp/data_1/0cf2e9402d/xyz.txt'
+    output_file_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/xyz.txt'
     np.savetxt(output_file_path, xyz, delimiter=' ', fmt='%.6f', header='x y z', comments='')
 
     print(f"Transformed points saved to {output_file_path}")

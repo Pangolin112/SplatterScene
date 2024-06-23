@@ -2,10 +2,11 @@ from PIL import Image
 import os
 import numpy as np
 from scipy.ndimage import distance_transform_edt
+from scipy.ndimage import maximum_filter
 
 # Define the source and destination folders
 source_folder = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/render_depth_original_size'
-destination_folder = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/depth'
+destination_folder = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/completion_gt_depth'
 
 for file_name in os.listdir(source_folder):
     if file_name.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif')):  # Check for image files
@@ -24,11 +25,6 @@ for file_name in os.listdir(source_folder):
 
         img_array[img_array < 0] = 0
 
-        max = img_array.max()
-        min = img_array.min()
-        print('max before normalization', max)
-        print('min before normalization', min)
-
         # Normalize the pixel values to fit within the 8-bit range (0-255)
         img_array_normalized = (img_array - 0) / (10000.0 - 0) * 255.0
         img_array_normalized = img_array_normalized.astype(np.uint8)
@@ -36,23 +32,35 @@ for file_name in os.listdir(source_folder):
         # Set pixels with values less than 10 to zero
         img_array_normalized[img_array_normalized == 0] = 0
 
+        # Pad the array to handle the boundary conditions
+        padded_img = np.pad(img_array_normalized, pad_width=5, mode='constant', constant_values=0)
+
+        # Apply the maximum filter with a size of 11x11 (5 pixels in each direction)
+        max_filtered = maximum_filter(padded_img, size=11)
+
+        # Update only the zero values in the original image within the boundary
+        for i in range(128):
+            for j in range(128):
+                if img_array_normalized[i][j] == 0:
+                    img_array_normalized[i][j] = max_filtered[i][j]
+
+
+        for i in range(128):
+            for j in range(128):
+                if img_array_normalized[i][j] == 0 and j > 0:
+                    img_array_normalized[i][j] = img_array_normalized[i][j - 1]
+
+        for i in range(128):
+            for j in range(128):
+                if img_array_normalized[i][127 - j] == 0 and j > 0:
+                    img_array_normalized[i][127 - j] = img_array_normalized[i][127 - j + 1]
+
         # Convert the normalized array back to an image in 'L' mode (8-bit pixels, black and white)
         img_normalized = Image.fromarray(img_array_normalized, mode='L')
 
         # Save the resized image to the destination folder as JPEG
         jpeg_file_name = os.path.splitext(file_name)[0] + '.jpg'
         img_normalized.save(os.path.join(destination_folder, jpeg_file_name), format='JPEG')
-
-        '''
-        # Scale the pixel values to fit within the 16-bit range (0-65535)
-        #img_array_scaled = (img_array * (65535.0 / img_array.max())).astype(np.uint16)
-        img_array_scaled = img_array.astype(np.uint16)
-
-        # Convert the scaled array back to an image in 'I;16' mode
-        img_rescaled = Image.fromarray(img_array_scaled, mode='I;16')
-
-        # Save the resized image to the destination folder
-        img_rescaled.save(os.path.join(destination_folder, file_name))'''
 
 
 

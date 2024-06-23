@@ -42,12 +42,14 @@ def readCamerasFromTxt(rgb_paths, pose_paths, depth_paths, idxs):
         T = w2c[:3, 3]
 
         image_path = rgb_paths[idx]
+        #print('image_path', image_path)
         image_name = Path(cam_name).stem
         # SRN images already are RGB with white background
         image = Image.open(image_path)
 
         ############ for depth #################################
         depth_path = depth_paths[idx]
+        #print('depth_path', depth_path)
         depth = Image.open(depth_path)
         ############ for depth #################################
 

@@ -24,8 +24,10 @@ from datasets.dataset_factory import get_dataset
 import open3d as o3d
 
 import cv2
-
+from datetime import datetime
 import matplotlib.pyplot as plt
+import math
+import time
 
 
 #########################for gradients, run much slower!!!!!!!!!!!!!!!!!!######################
@@ -35,13 +37,18 @@ import matplotlib.pyplot as plt
 
 # +experiment=lpips_100k.yaml
 
-
+current_time = datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + '/'
 ############ for depth #################################
 save_iterations = 100
 def project_points_to_image_plane(points, K, R, t, iteration, extrinsics_direction='world_to_camera', device='cuda'):
     points = points.to(device)
     points = points.reshape(-1, 3)
+
     file_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/xyz_predicted/'
+    file_path = file_path + str(current_time)
+    if iteration == 2:
+        os.makedirs(file_path, exist_ok=True)
+
     if iteration % save_iterations == 0:
         points_clone = points.clone()
         points_np = points_clone.detach().cpu().numpy()
@@ -71,24 +78,39 @@ def visualize_depth(depths, projected_points, iteration, width=128, height=128, 
     projected_points = projected_points.contiguous().to(device)
     min_depth = torch.min(depths)
     max_depth = torch.max(depths)
-    normalized_depths = (depths - min_depth) / (max_depth - min_depth) * 255
-    #normalized_depths = normalized_depths.to(torch.uint8)
+    # print("min_depth before masking: ", min_depth)
+    # print("max_depth before masking: ", max_depth)
+    # normalized_depths = (depths - min_depth) / (max_depth - min_depth) * 255
+    normalized_depths = depths
+    # normalized_depths = normalized_depths.to(torch.uint8)
     depth_image = torch.full((height, width), float('inf'), dtype=torch.float32, device=device)
-    projected_points = torch.round(projected_points).long()
+    projected_points = projected_points.round().long()
     valid_mask = (projected_points[:, 0] >= 0) & (projected_points[:, 0] < width) & \
                  (projected_points[:, 1] >= 0) & (projected_points[:, 1] < height)
     projected_points = projected_points[valid_mask]
     normalized_depths = normalized_depths[valid_mask]
+
+    min_depth = torch.min(normalized_depths)
+    max_depth = torch.max(normalized_depths)
+    # normalized_depths = (normalized_depths - min_depth) / (max_depth - min_depth) * 255
+
+
     v = projected_points[:, 0]
     u = projected_points[:, 1]
     depth_image[u, v] = torch.min(depth_image[u, v], normalized_depths)
     depth_image[depth_image == float('inf')] = 0
 
     file_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/depth_predicted/'
+    file_path = file_path + str(current_time)
+    if iteration == 2:
+        os.makedirs(file_path, exist_ok=True)
+
     if iteration % save_iterations == 0:
         depth_image_np = depth_image.cpu().detach().numpy()
         output_image_path = file_path + 'depth_image' + str(iteration) + '.jpg'
         cv2.imwrite(output_image_path, depth_image_np)
+        print("min_depth after masking: ", min_depth)
+        print("max_depth after masking: ", max_depth)
 
     # Create a mask for the predicted depth image where the pixel value is 0 (black pixels)
     mask = (depth_image > 0).float()
@@ -101,7 +123,10 @@ def visualize_depth_gt(depths, projected_points, iteration, width=128, height=12
     projected_points = projected_points.contiguous().to(device)
     min_depth = torch.min(depths)
     max_depth = torch.max(depths)
-    normalized_depths = (depths - min_depth) / (max_depth - min_depth) * 255
+    # print("min_depth before masking: ", min_depth)
+    # print("max_depth before masking: ", max_depth)
+    # normalized_depths = (depths - min_depth) / (max_depth - min_depth) * 255
+    normalized_depths = depths
     # normalized_depths = normalized_depths.to(torch.uint8)
     depth_image = torch.full((height, width), float('inf'), dtype=torch.float32, device=device)
     projected_points = projected_points.round().long()
@@ -109,12 +134,23 @@ def visualize_depth_gt(depths, projected_points, iteration, width=128, height=12
                  (projected_points[:, 1] >= 0) & (projected_points[:, 1] < height)
     projected_points = projected_points[valid_mask]
     normalized_depths = normalized_depths[valid_mask]
+
+    min_depth = torch.min(normalized_depths)
+    max_depth = torch.max(normalized_depths)
+    #normalized_depths = (normalized_depths - min_depth) / (max_depth - min_depth) * 255
+    # print("min_depth after masking: ", min_depth)
+    # print("max_depth after masking: ", max_depth)
+
     v = projected_points[:, 0]
     u = projected_points[:, 1]
     depth_image[u, v] = torch.min(depth_image[u, v], normalized_depths)
     depth_image[depth_image == float('inf')] = 0
 
     file_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/depth_from_gt/'
+    file_path = file_path + str(current_time)
+    if iteration == 2:
+        os.makedirs(file_path, exist_ok=True)
+
     if iteration % save_iterations == 0:
         depth_image_np = depth_image.cpu().detach().numpy()
         output_image_path = file_path + 'depth_image' + str(iteration) + '.jpg'
@@ -150,6 +186,11 @@ def depth_image_to_world(depth_image, K, R, t, iteration, extrinsics_direction='
     points_world_homogeneous = (extrinsic_matrix_inv @ points_camera_homogeneous.T).T
     points_world = points_world_homogeneous[:, :3]
 
+    file_path = "/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/ply_gt/"
+    file_path = file_path + str(current_time)
+    if iteration == 2:
+        os.makedirs(file_path, exist_ok=True)
+
     if iteration % save_iterations == 0:
         points_np = points_world.detach().cpu().numpy()
 
@@ -157,10 +198,10 @@ def depth_image_to_world(depth_image, K, R, t, iteration, extrinsics_direction='
         point_cloud = o3d.geometry.PointCloud()
         point_cloud.points = o3d.utility.Vector3dVector(points_np)
 
-        file_path = "/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/ply_gt/" + str(iteration) + ".ply"
+        ply_path = file_path + str(iteration) + ".ply"
 
         # Save the point cloud to a .ply file
-        o3d.io.write_point_cloud(file_path, point_cloud)
+        o3d.io.write_point_cloud(ply_path, point_cloud)
 
     return points_world.view(H, W, 3)
 
@@ -213,6 +254,15 @@ def align_point_clouds(source_points, target_points, iteration):
     # Scale back and translate
     source_points_aligned_final = source_points_aligned * target_scale + target_mean
 
+    file_path = "/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/aligned_predicted_ply/"
+    file_path = file_path + str(current_time)
+
+    transformation_path = file_path + '/tranformation/'
+
+    if iteration == 2:
+        os.makedirs(file_path, exist_ok=True)
+        os.makedirs(transformation_path, exist_ok=True)
+
     if iteration % save_iterations == 0:
         points_np = source_points_aligned_final.detach().cpu().numpy()
 
@@ -220,20 +270,98 @@ def align_point_clouds(source_points, target_points, iteration):
         point_cloud = o3d.geometry.PointCloud()
         point_cloud.points = o3d.utility.Vector3dVector(points_np)
 
-        file_path = "/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/aligned_predicted_ply/" + str(iteration) + ".ply"
+        ply_path = file_path + str(iteration) + ".ply"
 
         # Save the point cloud to a .ply file
-        o3d.io.write_point_cloud(file_path, point_cloud)
+        o3d.io.write_point_cloud(ply_path, point_cloud)
 
-    # translation_matrix = target_mean - torch.mm(source_mean, R.t()) * target_scale
-    # euler_angles = rotation_matrix_to_euler_angles(R)
-    # print("Rotation Matrix:", R)
-    # print("Translation Matrix:", translation_matrix)
-    # print("Euler Angles (rad):", euler_angles)
-    # print("Euler Angles (deg):", euler_angles * 180 / torch.pi)
+    translation_matrix = target_mean - torch.mm(source_mean, R.t()) * target_scale
+    euler_angles = rotation_matrix_to_euler_angles(R)
+    print("Rotation Matrix:", R)
+    print("Translation Matrix:", translation_matrix)
+    print("Euler Angles (rad):", euler_angles)
+    print("Euler Angles (deg):", euler_angles * 180 / torch.pi)
+    print(f"Iteration {iteration}: Source Scale = {source_scale.item()}, Target Scale = {target_scale.item()}", " scale times: ", target_scale.item() / source_scale.item())
+    data = f"""
+    Iteration {iteration}: Source Scale = {source_scale.item()}, Target Scale = {target_scale.item()}, scale times: {target_scale.item() / source_scale.item()}
+    Rotation Matrix: {R}
+    Translation Matrix: {translation_matrix}
+    Euler Angles (rad): {euler_angles}
+    Euler Angles (deg): {euler_angles * 180 / torch.pi}
+    """
+    transformation_txt_path = transformation_path +str(iteration) + ".txt"
+    with open(transformation_txt_path, 'a') as file:
+        file.write(data)
 
     return source_points_aligned_final
 
+def manual_align_point_clouds(source_points, target_points, rotation_degrees, rescale_number, iteration):
+
+    device = source_points.device
+
+    source_points = source_points.reshape(-1, 3)
+    target_points = target_points.reshape(-1, 3)
+
+    # Convert rotation degrees to radians
+    rotation_radians = [math.radians(deg) for deg in rotation_degrees]
+
+    # Create rotation matrices for each axis
+    Rx = torch.tensor([
+        [1, 0, 0],
+        [0, math.cos(rotation_radians[0]), -math.sin(rotation_radians[0])],
+        [0, math.sin(rotation_radians[0]), math.cos(rotation_radians[0])]
+    ], dtype=torch.float32, device=device)
+
+    Ry = torch.tensor([
+        [math.cos(rotation_radians[1]), 0, math.sin(rotation_radians[1])],
+        [0, 1, 0],
+        [-math.sin(rotation_radians[1]), 0, math.cos(rotation_radians[1])]
+    ], dtype=torch.float32, device=device)
+
+    Rz = torch.tensor([
+        [math.cos(rotation_radians[2]), -math.sin(rotation_radians[2]), 0],
+        [math.sin(rotation_radians[2]), math.cos(rotation_radians[2]), 0],
+        [0, 0, 1]
+    ], dtype=torch.float32, device=device)
+
+    # Combine rotations
+    R = torch.mm(Rz, torch.mm(Ry, Rx))
+
+    # Apply rotation
+    source_points_rotated = torch.mm(source_points, R.t())
+
+    # Apply scaling
+    source_points_scaled = source_points_rotated * rescale_number
+
+    # Compute centroids of source and target points
+    source_centroid = torch.mean(source_points_scaled, dim=0)
+    target_centroid = torch.mean(target_points, dim=0)
+
+    # Adjust translation vector to align centroids
+    translation_vector = target_centroid - source_centroid
+
+    # Apply translation
+    source_points_transformed = source_points_scaled + translation_vector
+
+    file_path = "/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/aligned_predicted_ply/"
+    file_path = file_path + str(current_time)
+
+    if iteration == 2:
+        os.makedirs(file_path, exist_ok=True)
+
+    if iteration % save_iterations == 0:
+        points_np = source_points_transformed.detach().cpu().numpy()
+
+        # Create an Open3D point cloud object
+        point_cloud = o3d.geometry.PointCloud()
+        point_cloud.points = o3d.utility.Vector3dVector(points_np)
+
+        ply_path = file_path + str(iteration) + ".ply"
+
+        # Save the point cloud to a .ply file
+        o3d.io.write_point_cloud(ply_path, point_cloud)
+
+    return source_points_transformed
 
 
 
@@ -253,6 +381,7 @@ def main(cfg: DictConfig):
 
     if fabric.is_global_zero:
         vis_dir = os.getcwd()
+        #vis_dir = '/media/qianru/12T_Data/Experiments_output/SplatterScene/experiments_out/'+str(current_time)
 
         dict_cfg = OmegaConf.to_container(
             cfg, resolve=True, throw_on_missing=True
@@ -378,7 +507,6 @@ def main(cfg: DictConfig):
 
     for num_epoch in range((cfg.opt.iterations + 1 - first_iter) // len(dataloader) + 1):
         dataloader.sampler.set_epoch(num_epoch)
-
         for data in dataloader:
             iteration += 1
 
@@ -439,9 +567,11 @@ def main(cfg: DictConfig):
                 T_input = data["Ts"][b_idx, 0]
                 gt_depth_input_image = data["gt_depths"][b_idx, 0] * 255.0
                 gt_points = depth_image_to_world(gt_depth_input_image, K_input, R_input, T_input, iteration)
-                aligned_points = align_point_clouds(points, gt_points, iteration)
+                #aligned_points = align_point_clouds(points, gt_points, iteration)
+                aligned_points = manual_align_point_clouds(points, gt_points, [-90, 0, -90], 15, iteration)
                 ############ for depth #################################
                 for r_idx in range(cfg.data.input_images, data["gt_images"].shape[1]):
+                    time_start = time.time()
                     if "focals_pixels" in data.keys():
                         focals_pixels_render = data["focals_pixels"][b_idx, r_idx].cpu()
                     else:
@@ -457,18 +587,18 @@ def main(cfg: DictConfig):
                     # ============ Gradients ===============
                     #predicted_depth_images.append(predicted_depth_image.detach().requires_grad_())
                     # ============ Gradients ===============
-                    # gt_depth_image = data["gt_depths"][b_idx, r_idx]
+                    gt_depth_image = data["gt_depths"][b_idx, r_idx] * 255.0
+                    mask_gt = (gt_depth_image > 0.0).float()
                     # ============ Does not use the gt depth of each view but the reprojected point of input depth ===============
-                    reprojected_gt_points, reprojected_gt_depths = project_points_to_image_plane(gt_points, K, R, T, iteration)
-                    gt_depth_image, mask_gt = visualize_depth_gt(reprojected_gt_depths, reprojected_gt_points, iteration)
+                    # reprojected_gt_points, reprojected_gt_depths = project_points_to_image_plane(gt_points, K, R, T, iteration)
+                    # gt_depth_image, mask_gt = visualize_depth_gt(reprojected_gt_depths, reprojected_gt_points, iteration)
                     # ============ Does not use the gt depth of each view but the reprojected point of input depth ===============
 
                     masked_gt_depth = gt_depth_image * mask_predicted
                     gt_depth_images.append(masked_gt_depth)
 
-                    masked_predicted_depth = predicted_depth_image * mask_gt
+                    masked_predicted_depth = predicted_depth_image
                     predicted_depth_images.append(masked_predicted_depth)
-
                     ############ for depth #################################
 
                     image = render_predicted(gaussian_splat_batch,
@@ -491,6 +621,9 @@ def main(cfg: DictConfig):
                     # ============ Gradients ===============
                     gt_image = data["gt_images"][b_idx, r_idx]
                     gt_images.append(gt_image)
+                    time_iteration = time.time() - time_start
+                    print(f"Time for iteration {iteration} and view {r_idx}: {time_iteration}")
+
             rendered_images = torch.stack(rendered_images, dim=0)
             gt_images = torch.stack(gt_images, dim=0)
             gt_depth_images = torch.stack(gt_depth_images, dim=0)
@@ -517,16 +650,24 @@ def main(cfg: DictConfig):
                     )
             # depth
             lambda_depth = 0.0001
+            #lambda_depth = 0.000
             # mask
             lambda_mask = 0.01
+            #lambda_mask = 0.0
 
+            # if iteration < 5000 and cfg.opt.lambda_lpips == 0:
+            #     print('stage 1')
+            #     total_loss = l12_loss_sum * 0 + lpips_loss_sum * 0 + depth_loss_sum * lambda_depth + mask_reg_loss * lambda_mask
+            # if iteration >= 5000 or cfg.opt.lambda_lpips != 0:
+            #     print('stage 2')
+            #     total_loss = l12_loss_sum * lambda_l12 + lpips_loss_sum * lambda_lpips + depth_loss_sum * 0 + mask_reg_loss * 0
 
             total_loss = l12_loss_sum * lambda_l12 + lpips_loss_sum * lambda_lpips + depth_loss_sum * lambda_depth + mask_reg_loss * lambda_mask
-            #total_loss = l12_loss_sum * 0 + lpips_loss_sum * 0 + depth_loss_sum * lambda_depth
+
             print('training loss is: ', total_loss.item() * 100)
-            print('l12 loss is     : ', l12_loss_sum.item()  * 100)
-            print('depth loss is   : ', depth_loss_sum.item() * lambda_depth  * 100)
-            print('mask loss is    : ', mask_reg_loss.item() * lambda_mask  * 100)
+            print('l12 loss is     : ', l12_loss_sum.item() * 100)
+            print('depth loss is   : ', depth_loss_sum.item() * lambda_depth * 100)
+            print('mask loss is    : ', mask_reg_loss.item() * lambda_mask * 100)
 
             if cfg.data.category == "hydrants" or cfg.data.category == "teddybears":
                 total_loss = total_loss + big_gaussian_reg_loss + small_gaussian_reg_loss
