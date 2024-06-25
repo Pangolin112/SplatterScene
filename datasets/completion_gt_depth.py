@@ -5,8 +5,8 @@ from scipy.ndimage import distance_transform_edt
 from scipy.ndimage import maximum_filter
 
 # Define the source and destination folders
-source_folder = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/render_depth_original_size'
-destination_folder = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/completion_gt_depth'
+source_folder = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/49a82360aa/render_depth'
+destination_folder = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/49a82360aa/depth'
 
 for file_name in os.listdir(source_folder):
     if file_name.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif')):  # Check for image files
@@ -61,7 +61,5 @@ for file_name in os.listdir(source_folder):
         # Save the resized image to the destination folder as JPEG
         jpeg_file_name = os.path.splitext(file_name)[0] + '.jpg'
         img_normalized.save(os.path.join(destination_folder, jpeg_file_name), format='JPEG')
-
-
 
 print("Image resized and saved successfully.")

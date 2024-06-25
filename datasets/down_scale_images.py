@@ -4,8 +4,8 @@ import numpy as np
 from scipy.ndimage import distance_transform_edt
 
 # Define the source and destination folders
-source_folder = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/render_depth_original_size'
-destination_folder = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/depth'
+source_folder = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/49a82360aa/undistorted_images'
+destination_folder = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/49a82360aa/rgb'
 
 for file_name in os.listdir(source_folder):
     if file_name.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif')):  # Check for image files
@@ -14,34 +14,14 @@ for file_name in os.listdir(source_folder):
         img = Image.open(img_path)
 
         # Convert the image to 'F' mode (32-bit floating point) for resizing
-        img = img.convert('F')
+        # img = img.convert('F')
 
         # Resize the image
         img_resized = img.resize((128, 128), Image.Resampling.LANCZOS)
 
-        # Convert to numpy array for scaling
-        img_array = np.array(img_resized)
-
-        img_array[img_array < 0] = 0
-
-        max = img_array.max()
-        min = img_array.min()
-        print('max before normalization', max)
-        print('min before normalization', min)
-
-        # Normalize the pixel values to fit within the 8-bit range (0-255)
-        img_array_normalized = (img_array - 0) / (10000.0 - 0) * 255.0
-        img_array_normalized = img_array_normalized.astype(np.uint8)
-
-        # Set pixels with values less than 10 to zero
-        img_array_normalized[img_array_normalized == 0] = 0
-
-        # Convert the normalized array back to an image in 'L' mode (8-bit pixels, black and white)
-        img_normalized = Image.fromarray(img_array_normalized, mode='L')
-
         # Save the resized image to the destination folder as JPEG
-        jpeg_file_name = os.path.splitext(file_name)[0] + '.jpg'
-        img_normalized.save(os.path.join(destination_folder, jpeg_file_name), format='JPEG')
+        jpeg_file_name = os.path.splitext(file_name)[0] + '.JPG'
+        img_resized.save(os.path.join(destination_folder, jpeg_file_name), format='JPEG')
 
         '''
         # Scale the pixel values to fit within the 16-bit range (0-65535)

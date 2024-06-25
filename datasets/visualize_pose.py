@@ -36,11 +36,8 @@ def create_camera_frustum(size=0.01, color=[0, 0, 1]):
 
 
 # Directory containing the transformation files
-directory_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/cars_train/0cf2e9402d_train/pose/'
-
-#directory_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/pose_colmap/'
-
-directory_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/pose_nerfstudio/'
+#directory_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/49a82360aa/pose_colmap/'
+directory_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/49a82360aa/pose_nerfstudio/'
 
 # List all files in the directory
 files = os.listdir(directory_path)
@@ -51,6 +48,7 @@ pose_files = [file for file in files if file.endswith('.txt')]
 # Create a visualizer
 vis = o3d.visualization.Visualizer()
 vis.create_window()
+
 
 # Read the transformation matrices from the files and add them to the visualizer
 for pose_file in pose_files:

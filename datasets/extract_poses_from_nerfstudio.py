@@ -1,10 +1,13 @@
 import json
 
+name_scene = '49a82360aa'
+base_path = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/{name_scene}/'
+
 # Load the JSON data from file
-with open('/home/qianru/Projects/TUM/TUM_2/ADL4CV/Data/ScanNetpp/data_1/0a7cc12c0e/transforms_undistorted.json', 'r') as file:
+with open(base_path + 'nerfstudio/transforms_undistorted.json', 'r') as file:
     data = json.load(file)
 
-image_path = "/home/qianru/Projects/TUM/TUM_2/ADL4CV/Data/ScanNetpp/data_1/0a7cc12c0e/rgb/"
+image_path = base_path + "undistorted_images/"
 
 # Loop over each frame in the JSON data
 for frame in data['frames']:
@@ -13,7 +16,7 @@ for frame in data['frames']:
 
     # Create a filename for the .txt file corresponding to the image
     txt_filename = frame['file_path'] + '.txt'
-    txt_filepath = '/home/qianru/Projects/TUM/TUM_2/ADL4CV/Data/ScanNetpp/data_1/0a7cc12c0e/pose/' + txt_filename
+    txt_filepath = base_path + 'pose_nerfstudio/' + txt_filename
 
     # Write the transform matrix to the .txt file
     with open(txt_filepath, 'w') as txt_file:
@@ -28,7 +31,7 @@ for frame in data['test_frames']:
 
     # Create a filename for the .txt file corresponding to the image
     txt_filename = frame['file_path'] + '.txt'
-    txt_filepath = '/home/qianru/Projects/TUM/TUM_2/ADL4CV/Data/ScanNetpp/data_1/0a7cc12c0e/pose/' + txt_filename
+    txt_filepath = base_path + 'pose_nerfstudio/' + txt_filename
 
     # Write the transform matrix to the .txt file
     with open(txt_filepath, 'w') as txt_file:

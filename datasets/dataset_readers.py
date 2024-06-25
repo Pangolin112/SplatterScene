@@ -13,6 +13,8 @@ class CameraInfo(NamedTuple):
     uid: int
     R: np.array
     T: np.array
+    R_colmap_depth: np.array
+    T_colmap_depth: np.array
     FovY: np.array
     FovX: np.array
     image: np.array
@@ -24,13 +26,15 @@ class CameraInfo(NamedTuple):
     height: int
 
 
-def readCamerasFromTxt(rgb_paths, pose_paths, depth_paths, idxs):
+def readCamerasFromTxt(rgb_paths, pose_colmap_depth_paths, pose_nerfstudio_rgb_paths, depth_paths, idxs):
     cam_infos = []
     # Transform fov from degrees to radians
-    fovx = 51.98948897809546 * 2 * np.pi / 360
+    #fovx = 51.98948897809546 * 2 * np.pi / 360
+    fovx = 42.44 * 2 * np.pi / 360
 
     for idx in idxs:
-        cam_name = pose_paths[idx]
+        #cam_name = pose_paths[idx]
+        cam_name = pose_nerfstudio_rgb_paths[idx]
         # SRN cameras are camera-to-world transforms
         # no need to change from SRN camera axes (x right, y down, z away) 
         # it's the same as COLMAP (x right, y down, z forward)
@@ -40,6 +44,19 @@ def readCamerasFromTxt(rgb_paths, pose_paths, depth_paths, idxs):
         w2c = np.linalg.inv(c2w)
         R = np.transpose(w2c[:3,:3])  # R is stored transposed due to 'glm' in CUDA code
         T = w2c[:3, 3]
+
+        ############ for depth #################################
+        cam_name = pose_colmap_depth_paths[idx]
+        # SRN cameras are camera-to-world transforms
+        # no need to change from SRN camera axes (x right, y down, z away)
+        # it's the same as COLMAP (x right, y down, z forward)
+        c2w = np.loadtxt(cam_name, dtype=np.float32).reshape(4, 4)
+
+        # get the world-to-camera transform and set R, T
+        w2c = np.linalg.inv(c2w)
+        R_colmap_depth = np.transpose(w2c[:3, :3])  # R is stored transposed due to 'glm' in CUDA code
+        T_colmap_depth = w2c[:3, 3]
+        ############ for depth #################################
 
         image_path = rgb_paths[idx]
         #print('image_path', image_path)
@@ -57,7 +74,7 @@ def readCamerasFromTxt(rgb_paths, pose_paths, depth_paths, idxs):
         FovY = fovy 
         FovX = fovx
 
-        cam_infos.append(CameraInfo(uid=idx, R=R, T=T, FovY=FovY, FovX=FovX, image=image, depth=depth,
+        cam_infos.append(CameraInfo(uid=idx, R=R, T=T, R_colmap_depth=R_colmap_depth, T_colmap_depth=T_colmap_depth, FovY=FovY, FovX=FovX, image=image, depth=depth,
                         image_path=image_path, image_name=image_name, depth_path=depth_path, width=image.size[0], height=image.size[1]))
         
     return cam_infos

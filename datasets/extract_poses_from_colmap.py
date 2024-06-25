@@ -49,7 +49,7 @@ def write_matrices(image_poses, output_folder):
 
 
 # Usage
-images_txt_path = '/home/qianru/Projects/TUM/TUM_2/ADL4CV/Data/ScanNetpp/data_1/0cf2e9402d/images.txt'
-output_folder = '/home/qianru/Projects/TUM/TUM_2/ADL4CV/Data/ScanNetpp/data_1/0cf2e9402d/pose_colmap/'
+images_txt_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/49a82360aa/colmap/images.txt'
+output_folder = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/49a82360aa/pose_colmap/'
 image_poses = parse_images_txt(images_txt_path)
 write_matrices(image_poses, output_folder)

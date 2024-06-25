@@ -40,6 +40,9 @@ import time
 current_time = datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + '/'
 ############ for depth #################################
 save_iterations = 100
+
+name_scene = '0cf2e9402d'
+
 def project_points_to_image_plane(points, K, R, t, iteration, extrinsics_direction='world_to_camera', device='cuda'):
     points = points.to(device)
     points = points.reshape(-1, 3)
@@ -90,8 +93,8 @@ def visualize_depth(depths, projected_points, iteration, width=128, height=128, 
     projected_points = projected_points[valid_mask]
     normalized_depths = normalized_depths[valid_mask]
 
-    min_depth = torch.min(normalized_depths)
-    max_depth = torch.max(normalized_depths)
+    # min_depth = torch.min(normalized_depths)
+    # max_depth = torch.max(normalized_depths)
     # normalized_depths = (normalized_depths - min_depth) / (max_depth - min_depth) * 255
 
 
@@ -109,8 +112,8 @@ def visualize_depth(depths, projected_points, iteration, width=128, height=128, 
         depth_image_np = depth_image.cpu().detach().numpy()
         output_image_path = file_path + 'depth_image' + str(iteration) + '.jpg'
         cv2.imwrite(output_image_path, depth_image_np)
-        print("min_depth after masking: ", min_depth)
-        print("max_depth after masking: ", max_depth)
+        # print("min_depth after masking: ", min_depth)
+        # print("max_depth after masking: ", max_depth)
 
     # Create a mask for the predicted depth image where the pixel value is 0 (black pixels)
     mask = (depth_image > 0).float()
@@ -563,12 +566,15 @@ def main(cfg: DictConfig):
                 ############ for depth #################################
                 points = gaussian_splat_batch["xyz"]
                 K_input = data["Ks"][b_idx, 0]
-                R_input = data["Rs"][b_idx, 0]
-                T_input = data["Ts"][b_idx, 0]
+                R_input = data["colmap_depth_Rs"][b_idx, 0]
+                T_input = data["colmap_depth_Ts"][b_idx, 0]
+                # R_input = data["nerfstudio_rgb_Rs"][b_idx, 0]
+                # T_input = data["nerfstudio_rgb_Ts"][b_idx, 0]
                 gt_depth_input_image = data["gt_depths"][b_idx, 0] * 255.0
                 gt_points = depth_image_to_world(gt_depth_input_image, K_input, R_input, T_input, iteration)
-                #aligned_points = align_point_clouds(points, gt_points, iteration)
-                aligned_points = manual_align_point_clouds(points, gt_points, [-90, 0, -90], 15, iteration)
+                # aligned_points = align_point_clouds(points, gt_points, iteration)
+                aligned_points = manual_align_point_clouds(points, gt_points, [-90, 0, -90], 15, iteration) # colmap
+                #aligned_points = manual_align_point_clouds(points, gt_points, [0, 0, 0], 15, iteration) # nerfstudio
                 ############ for depth #################################
                 for r_idx in range(cfg.data.input_images, data["gt_images"].shape[1]):
                     time_start = time.time()
@@ -579,8 +585,10 @@ def main(cfg: DictConfig):
 
                     ############ for depth #################################
                     K = data["Ks"][b_idx, r_idx]
-                    R = data["Rs"][b_idx, r_idx]
-                    T = data["Ts"][b_idx, r_idx]
+                    R = data["colmap_depth_Rs"][b_idx, r_idx]
+                    T = data["colmap_depth_Ts"][b_idx, r_idx]
+                    # R = data["nerfstudio_rgb_Rs"][b_idx, r_idx]
+                    # T = data["nerfstudio_rgb_Ts"][b_idx, r_idx]
                     projected_points, predicted_depths = project_points_to_image_plane(aligned_points, K, R, T, iteration)
                     predicted_depth_image, mask_predicted = visualize_depth(predicted_depths, projected_points, iteration)
 
@@ -654,6 +662,7 @@ def main(cfg: DictConfig):
             # mask
             lambda_mask = 0.01
             #lambda_mask = 0.0
+            # lambda_l12 = 0.0
 
             # if iteration < 5000 and cfg.opt.lambda_lpips == 0:
             #     print('stage 1')

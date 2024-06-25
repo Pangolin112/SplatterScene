@@ -21,7 +21,7 @@ def delete_files_in_folder(folder_path):
             print(f"Failed to delete {file_path}. Reason: {e}")
 
 
-def move_and_overwrite_files(list_index):
+def move_and_overwrite_files(index_list):
     """
     Move selected files from source_folder to destination_folder, overwriting any existing files.
 
@@ -37,19 +37,22 @@ def move_and_overwrite_files(list_index):
             folder_type = 'val'
         else:
             folder_type = 'test'
-        for i in range(350, 367):
-            for j in range(0, 3):
+        for i in index_list:
+            for j in range(0, 4):
                 if j == 0:
                     folder_name = 'rgb'
                     file_name = f"DSC{i:05d}.JPG"
                 elif j == 1:
                     folder_name = 'depth'
                     file_name = f"DSC{i:05d}.jpg"
+                elif j == 2:
+                    folder_name = 'pose_colmap_depth'
+                    file_name = f"DSC{i:05d}.JPG.txt"
                 else:
-                    folder_name = 'pose'
+                    folder_name = 'pose_nerfstudio_rgb'
                     file_name = f"DSC{i:05d}.JPG.txt"
 
-                source_folder = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/cars_train/0cf2e9402d_train/{folder_name}/'
+                source_folder = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/{folder_name}/'
                 destination_folder = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/srn_cars/cars_{folder_type}/0cf2e9402d_train/{folder_name}/'
 
                 # Adjust the formatting according to your file naming convention
@@ -70,25 +73,27 @@ def move_and_overwrite_files(list_index):
 # end_index = int(input("Enter the ending index of the files to move: "))
 
 # delete files before copying
-for k in range(0, 3):
-    if k == 0:
+for q in range(0, 3):
+    if q == 0:
         folder_type = 'train'
-    elif k == 1:
+    elif q == 1:
         folder_type = 'val'
     else:
         folder_type = 'test'
-        for j in range(0, 3):
-            if j == 0:
-                folder_name = 'rgb'
-            elif j == 1:
-                folder_name = 'depth'
-            else:
-                folder_name = 'pose'
+    for p in range(0, 4):
+        if p == 0:
+            folder_name = 'rgb'
+        elif p == 1:
+            folder_name = 'depth'
+        elif p == 2:
+            folder_name = 'pose_colmap_depth'
+        else:
+            folder_name = 'pose_nerfstudio_rgb'
 
-            destination_folder = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/srn_cars/cars_{folder_type}/0cf2e9402d_train/{folder_name}/'
-            delete_files_in_folder(destination_folder)
+        destination_folder = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/srn_cars/cars_{folder_type}/0cf2e9402d_train/{folder_name}/'
+        delete_files_in_folder(destination_folder)
 
-list_index = (z for z in range(350, 367))
+# index_list = [i for i in range(101, 109)]
+index_list = [350,355]
 
-
-move_and_overwrite_files(list_index)
+move_and_overwrite_files(index_list)
