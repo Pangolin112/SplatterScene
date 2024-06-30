@@ -39,11 +39,11 @@ import time
 
 current_time = datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + '/'
 ############ for depth #################################
-save_iterations = 1
+save_iterations = 100
 
 name_scene = '0cf2e9402d'
 
-def project_points_to_image_plane(points, K, R, t, iteration, extrinsics_direction='world_to_camera', device='cuda'):
+def project_points_to_image_plane(points, K, R, t, iteration, extrinsics_direction='camera_to_world', device='cuda'):
     points = points.to(device)
     points = points.reshape(-1, 3)
 
@@ -79,8 +79,13 @@ def project_points_to_image_plane(points, K, R, t, iteration, extrinsics_directi
 def visualize_depth(depths, projected_points, iteration, width=128, height=128, device='cuda'):
     depths = depths.contiguous().to(device)
     projected_points = projected_points.contiguous().to(device)
-
+    min_depth = torch.min(depths)
+    max_depth = torch.max(depths)
+    # print("min_depth before masking: ", min_depth)
+    # print("max_depth before masking: ", max_depth)
+    # normalized_depths = (depths - min_depth) / (max_depth - min_depth) * 255
     normalized_depths = depths
+    # normalized_depths = normalized_depths.to(torch.uint8)
     depth_image = torch.full((height, width), float('inf'), dtype=torch.float32, device=device)
     projected_points = projected_points.round().long()
     valid_mask = (projected_points[:, 0] >= 0) & (projected_points[:, 0] < width) & \
@@ -88,22 +93,15 @@ def visualize_depth(depths, projected_points, iteration, width=128, height=128, 
     projected_points = projected_points[valid_mask]
     normalized_depths = normalized_depths[valid_mask]
 
+    # min_depth = torch.min(normalized_depths)
+    # max_depth = torch.max(normalized_depths)
+    # normalized_depths = (normalized_depths - min_depth) / (max_depth - min_depth) * 255
+
+
     v = projected_points[:, 0]
     u = projected_points[:, 1]
     depth_image[u, v] = torch.min(depth_image[u, v], normalized_depths)
     depth_image[depth_image == float('inf')] = 0
-
-    # normalized_depths = depths
-    # depth_image = torch.full((height, width), 0.0, dtype=torch.float32, device=device)
-    # projected_points = projected_points.round().long()
-    # valid_mask = (projected_points[:, 0] >= 0) & (projected_points[:, 0] < width) & \
-    #              (projected_points[:, 1] >= 0) & (projected_points[:, 1] < height)
-    # projected_points = projected_points[valid_mask]
-    # normalized_depths = normalized_depths[valid_mask]
-    #
-    # v = projected_points[:, 0]
-    # u = projected_points[:, 1]
-    # depth_image[u, v] = torch.max(depth_image[u, v], normalized_depths)
 
     file_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/depth_predicted/'
     file_path = file_path + str(current_time)
@@ -114,6 +112,8 @@ def visualize_depth(depths, projected_points, iteration, width=128, height=128, 
         depth_image_np = depth_image.cpu().detach().numpy()
         output_image_path = file_path + 'depth_image' + str(iteration) + '.jpg'
         cv2.imwrite(output_image_path, depth_image_np)
+        # print("min_depth after masking: ", min_depth)
+        # print("max_depth after masking: ", max_depth)
 
     # Create a mask for the predicted depth image where the pixel value is 0 (black pixels)
     mask = (depth_image > 0).float()
@@ -164,11 +164,12 @@ def visualize_depth_gt(depths, projected_points, iteration, width=128, height=12
     return depth_image, mask
 
 
-def depth_image_to_world(depth_image, K, R, t, iteration, extrinsics_direction='world_to_camera', device='cuda'):
+def depth_image_to_world(depth_image, K, R, t, iteration, extrinsics_direction='camera_to_world', device='cuda'):
     depth_image = depth_image.to(device)
     if extrinsics_direction == 'camera_to_world':
         R = torch.inverse(R)
         t = -R @ t
+
     _, H, W = depth_image.shape
     u = torch.arange(0, W, device=device, dtype=torch.float32).view(1, -1).repeat(H, 1)
     v = torch.arange(0, H, device=device, dtype=torch.float32).view(-1, 1).repeat(1, W)
@@ -179,17 +180,22 @@ def depth_image_to_world(depth_image, K, R, t, iteration, extrinsics_direction='
     K_inv = torch.inverse(K)
     normalized_coords = (K_inv @ uv1.T).T
     points_camera = normalized_coords * depths.view(-1, 1)
+
     ones = torch.ones((points_camera.shape[0], 1), device=device)
     points_camera_homogeneous = torch.cat((points_camera, ones), dim=1)
-    # extrinsic_matrix = torch.cat((R, t.reshape(-1, 1)), dim=1)
+
+    # extrinsic_matrix = torch.cat((R, t.reshape(-1, 1)), dim=1) # before
+    # Create the 4x4 extrinsic matrix
     extrinsic_matrix = torch.eye(4, device=device)
     extrinsic_matrix[:3, :3] = R
     extrinsic_matrix[:3, 3] = t.view(-1)
-    # if extrinsics_direction == 'camera_to_world':
-    #     extrinsic_matrix_inv = torch.inverse(extrinsic_matrix)
-    # else:
-    #     extrinsic_matrix_inv = torch.cat((torch.inverse(R), (-torch.inverse(R) @ t).reshape(-1, 1)), dim=1)
-    extrinsic_matrix_inv = torch.inverse(extrinsic_matrix)
+
+    if extrinsics_direction == 'camera_to_world':
+        extrinsic_matrix_inv = torch.inverse(extrinsic_matrix)
+    else:
+        # extrinsic_matrix_inv = torch.cat((torch.inverse(R), (-torch.inverse(R) @ t).reshape(-1, 1)), dim=1) # before
+        extrinsic_matrix_inv = extrinsic_matrix
+
     points_world_homogeneous = (extrinsic_matrix_inv @ points_camera_homogeneous.T).T
     points_world = points_world_homogeneous[:, :3]
 
@@ -200,7 +206,6 @@ def depth_image_to_world(depth_image, K, R, t, iteration, extrinsics_direction='
 
     if iteration % save_iterations == 0:
         points_np = points_world.detach().cpu().numpy()
-        # points_np = points_world.detach().cpu().numpy() / 100.0  # for visualization with cameras
 
         # Create an Open3D point cloud object
         point_cloud = o3d.geometry.PointCloud()
@@ -303,7 +308,7 @@ def align_point_clouds(source_points, target_points, iteration):
 
     return source_points_aligned_final
 
-def manual_align_point_clouds(source_points, target_points, rotation_degrees, rescale_number, translation, iteration):
+def manual_align_point_clouds(source_points, target_points, rotation_degrees, rescale_number, iteration):
 
     device = source_points.device
 
@@ -347,15 +352,12 @@ def manual_align_point_clouds(source_points, target_points, rotation_degrees, re
 
     # Adjust translation vector to align centroids
     translation_vector = target_centroid - source_centroid
-    # translation_vector = torch.tensor(translation, dtype=torch.float32, device=device)
 
-    # translation_vector[0] = translation_vector[0] + torch.abs(translation_vector[0] * 0.5)
-    # translation_vector[1] = translation_vector[1] - torch.abs(translation_vector[1] * 0.3)
+    translation_vector[0] = translation_vector[0] + torch.abs(translation_vector[0] * 0.5)
+    translation_vector[1] = translation_vector[1] - torch.abs(translation_vector[1] * 0.3)
 
     # Apply translation
     source_points_transformed = source_points_scaled + translation_vector
-    # source_points_transformed = source_points_scaled  # no translation
-    # print(f'{iteration} translation: {translation_vector}')
 
     file_path = "/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/aligned_predicted_ply/"
     file_path = file_path + str(current_time)
@@ -579,14 +581,16 @@ def main(cfg: DictConfig):
                 K_input = data["Ks"][b_idx, 0]
                 R_input = data["colmap_depth_Rs"][b_idx, 0]
                 T_input = data["colmap_depth_Ts"][b_idx, 0]
+                # R_input = data["nerfstudio_rgb_Rs"][b_idx, 0]
+                # T_input = data["nerfstudio_rgb_Ts"][b_idx, 0]
                 gt_depth_input_image = data["gt_depths"][b_idx, 0] * 255.0
                 gt_points = depth_image_to_world(gt_depth_input_image, K_input, R_input, T_input, iteration)
                 # aligned_points = align_point_clouds(points, gt_points, iteration)
-                # aligned_points = manual_align_point_clouds(points, gt_points, [-90, 0, -90], 15, [-80, 0, 0], iteration)  # colmap
-                aligned_points = manual_align_point_clouds(points, gt_points, [-90, 0, -90], 15, [0, 0, 0], iteration)  # auto translation and no need to align because the right pose given
-                # aligned_points = manual_align_point_clouds(points, gt_points, [-90, 0, -90], 60, [0, 0, 0], iteration)
+                aligned_points = manual_align_point_clouds(points, gt_points, [-90, 0, -90], 20, iteration) # colmap
+                #aligned_points = manual_align_point_clouds(points, gt_points, [0, 0, 0], 15, iteration) # nerfstudio
                 ############ for depth #################################
                 for r_idx in range(cfg.data.input_images, data["gt_images"].shape[1]):
+                    time_start = time.time()
                     if "focals_pixels" in data.keys():
                         focals_pixels_render = data["focals_pixels"][b_idx, r_idx].cpu()
                     else:
@@ -596,6 +600,8 @@ def main(cfg: DictConfig):
                     K = data["Ks"][b_idx, r_idx]
                     R = data["colmap_depth_Rs"][b_idx, r_idx]
                     T = data["colmap_depth_Ts"][b_idx, r_idx]
+                    # R = data["nerfstudio_rgb_Rs"][b_idx, r_idx]
+                    # T = data["nerfstudio_rgb_Ts"][b_idx, r_idx]
                     projected_points, predicted_depths = project_points_to_image_plane(aligned_points, K, R, T, iteration)
                     predicted_depth_image, mask_predicted = visualize_depth(predicted_depths, projected_points, iteration)
 
@@ -624,25 +630,6 @@ def main(cfg: DictConfig):
                                         cfg,
                                         focals_pixels=focals_pixels_render)["render"]
 
-                    # ================== for rgb saving ==================
-                    file_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/rgb_predicted/'
-                    file_path = file_path + str(current_time)
-                    if iteration == 2:
-                        os.makedirs(file_path, exist_ok=True)
-
-                    if iteration % save_iterations == 0:
-                        # Convert tensor to NumPy array and scale to [0, 255]
-                        rgb_image_np = image.cpu().detach().numpy() * 255.0
-                        # Transpose to [height, width, channels]
-                        rgb_image_np = rgb_image_np.transpose(1, 2, 0)  # From [3, 128, 128] to [128, 128, 3]
-                        # Convert RGB to BGR
-                        bgr_image_np = cv2.cvtColor(rgb_image_np.astype('uint8'), cv2.COLOR_RGB2BGR)
-                        # Define the output image path
-                        output_image_path = file_path + 'rgb_image' + str(iteration) + '.jpg'
-                        # Save the image using OpenCV
-                        cv2.imwrite(output_image_path, bgr_image_np)
-                    # ================== for rgb saving ==================
-
                     # ============ Gradients ===============
                     # Set requires_grad=True for rendered images
                     #image.requires_grad = True
@@ -655,10 +642,11 @@ def main(cfg: DictConfig):
                     # ============ Gradients ===============
                     gt_image = data["gt_images"][b_idx, r_idx]
                     gt_images.append(gt_image)
+                    time_iteration = time.time() - time_start
+                    print(f"Time for iteration {iteration} and view {r_idx}: {time_iteration}")
 
             rendered_images = torch.stack(rendered_images, dim=0)
             gt_images = torch.stack(gt_images, dim=0)
-
             gt_depth_images = torch.stack(gt_depth_images, dim=0)
             predicted_depth_images = torch.stack(predicted_depth_images, dim=0)
 
@@ -682,11 +670,11 @@ def main(cfg: DictConfig):
                     lpips_fn(rendered_images * 2 - 1, gt_images * 2 - 1),
                     )
             # depth
-            lambda_depth = 0.0001
-            # lambda_depth = 0.000
+            #lambda_depth = 0.0001
+            lambda_depth = 0.000
             # mask
-            lambda_mask = 0.01
-            # lambda_mask = 0.0
+            #lambda_mask = 0.01
+            lambda_mask = 0.0
             # lambda_l12 = 0.0
 
             # if iteration < 5000 and cfg.opt.lambda_lpips == 0:

@@ -12,8 +12,8 @@ from pytorch3d.renderer.camera_utils import join_cameras_as_batch
 from pytorch3d.implicitron.dataset.json_index_dataset_map_provider_v2 import JsonIndexDatasetMapProviderV2
 from pytorch3d.implicitron.tools.config import expand_args_fields
 
-CO3D_RAW_ROOT = None # change to where your CO3D data resides
-CO3D_OUT_ROOT = None # change to your folder here
+CO3D_RAW_ROOT = '/media/qianru/12T_Data/Data/CO3D_v1/'  # change to where your CO3D data resides
+CO3D_OUT_ROOT = '/media/qianru/12T_Data/Data/CO3D_v1/CO3D_preprocessed/'  # change to your folder here
 
 assert CO3D_RAW_ROOT is not None, "Change CO3D_RAW_ROOT to where your raw CO3D data resides"
 assert CO3D_OUT_ROOT is not None, "Change CO3D_OUT_ROOT to where you want to save the processed CO3D data"

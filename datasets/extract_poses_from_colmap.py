@@ -25,13 +25,13 @@ def parse_images_txt(images_txt_path):
             # Convert quaternion to rotation matrix
             rot_matrix = R.from_quat([qx, qy, qz, qw]).as_matrix()
 
-            # Create the 4x4 transformation matrix
+            # Create the 4x4 world to camera transformation matrix
             transform_matrix = np.eye(4)
             transform_matrix[:3, :3] = rot_matrix
             transform_matrix[:3, 3] = [tx, ty, tz]
 
             # Store in dictionary
-            image_poses[image_name] = transform_matrix
+            image_poses[image_name] = np.linalg.inv(transform_matrix)  # store camera to world poses
 
     return image_poses
 
@@ -49,7 +49,7 @@ def write_matrices(image_poses, output_folder):
 
 
 # Usage
-images_txt_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/49a82360aa/colmap/images.txt'
-output_folder = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/49a82360aa/pose_colmap/'
+images_txt_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/images.txt'
+output_folder = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/pose/'
 image_poses = parse_images_txt(images_txt_path)
 write_matrices(image_poses, output_folder)

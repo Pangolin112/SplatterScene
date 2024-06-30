@@ -33,29 +33,42 @@ def readCamerasFromTxt(rgb_paths, pose_colmap_depth_paths, pose_nerfstudio_rgb_p
     fovx = 42.44 * 2 * np.pi / 360
 
     for idx in idxs:
+        #cam_name = pose_paths[idx]
         cam_name = pose_colmap_depth_paths[idx]
         # SRN cameras are camera-to-world transforms
-        # no need to change from SRN camera axes (x right, y down, z away)
+        # no need to change from SRN camera axes (x right, y down, z away) 
         # it's the same as COLMAP (x right, y down, z forward)
         c2w = np.loadtxt(cam_name, dtype=np.float32).reshape(4, 4)
 
         # get the world-to-camera transform and set R, T
         w2c = np.linalg.inv(c2w)
-        R = np.transpose(w2c[:3, :3])  # R is stored transposed due to 'glm' in CUDA code
+        R = np.transpose(w2c[:3,:3])  # R is stored transposed due to 'glm' in CUDA code
         T = w2c[:3, 3]
 
         ############ for depth #################################
-        R_colmap_depth = w2c[:3, :3]  # R_colmap_depth is stored not transposed as original R
+        cam_name = pose_colmap_depth_paths[idx]
+        # SRN cameras are camera-to-world transforms
+        # no need to change from SRN camera axes (x right, y down, z away)
+        # it's the same as COLMAP (x right, y down, z forward)
+        #c2w = np.loadtxt(cam_name, dtype=np.float32).reshape(4, 4) # !!!!!!!!!!!!!!!!!!!!!!
+
+        # get the world-to-camera transform and set R, T
+        #w2c = np.linalg.inv(c2w)
+
+        w2c = np.loadtxt(cam_name, dtype=np.float32).reshape(4, 4) # changed for reading camera to world R and T. !!!!!!!!!!!!!!!!!
+        R_colmap_depth = np.transpose(w2c[:3, :3])  # R is stored transposed due to 'glm' in CUDA code
         T_colmap_depth = w2c[:3, 3]
         ############ for depth #################################
 
         image_path = rgb_paths[idx]
+        #print('image_path', image_path)
         image_name = Path(cam_name).stem
         # SRN images already are RGB with white background
         image = Image.open(image_path)
 
         ############ for depth #################################
         depth_path = depth_paths[idx]
+        #print('depth_path', depth_path)
         depth = Image.open(depth_path)
         ############ for depth #################################
 

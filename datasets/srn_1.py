@@ -54,9 +54,11 @@ class SRNDataset(SharedDataset):
         # in deterministic version the number of testing images
         # and number of training images are the same
         if self.cfg.data.input_images == 1:
-            self.test_input_idxs = [2]
+            #self.test_input_idxs = [64]
+            self.test_input_idxs = [8]
         elif self.cfg.data.input_images == 2:
-            self.test_input_idxs = [2, 4]
+            #self.test_input_idxs = [64, 128]
+            self.test_input_idxs = [8, 16]
         else:
             raise NotImplementedError
 
@@ -105,8 +107,8 @@ class SRNDataset(SharedDataset):
             cam_infos = readCamerasFromTxt(rgb_paths, pose_colmap_depth_paths, pose_nerfstudio_rgb_paths, depth_paths, [i for i in range(len(rgb_paths))])
 
             for cam_info in cam_infos:
-                R = cam_info.R
-                T = cam_info.T
+                R = cam_info.R_colmap_depth # camera to world
+                T = cam_info.T_colmap_depth # camera to world
 
                 self.all_rgbs[example_id].append(PILtoTorch(cam_info.image, 
                                                             (self.cfg.data.training_resolution, self.cfg.data.training_resolution)).clamp(0.0, 1.0)[:3, :, :])
@@ -171,8 +173,9 @@ class SRNDataset(SharedDataset):
 
         else:
             input_idxs = self.test_input_idxs
-
-            frame_idxs = torch.cat([torch.tensor(input_idxs), torch.tensor([i for i in range(4) if i not in input_idxs])], dim=0)
+            
+            #frame_idxs = torch.cat([torch.tensor(input_idxs), torch.tensor([i for i in range(251) if i not in input_idxs])], dim=0)
+            frame_idxs = torch.cat([torch.tensor(input_idxs), torch.tensor([i for i in range(17) if i not in input_idxs])], dim=0)
 
         images_and_camera_poses = {
             "gt_images": self.all_rgbs[example_id][frame_idxs].clone(),

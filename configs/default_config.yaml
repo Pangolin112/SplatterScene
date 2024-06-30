@@ -17,7 +17,7 @@ data:
 opt:
   iterations: 800001
   base_lr: 0.00005
-  batch_size: 2 #originally 8
+  batch_size: 4 #originally 8
   betas:
     - 0.9
     - 0.999
@@ -54,8 +54,8 @@ model:
   isotropic: false
 
 logging:
-  ckpt_iterations: 1000
-  val_log: 1000
+  ckpt_iterations: 500
+  val_log: 500
   loss_log: 10
-  loop_log: 1000
-  render_log: 1000
+  loop_log: 500
+  render_log: 500
