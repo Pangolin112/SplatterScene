@@ -26,7 +26,7 @@ class CameraInfo(NamedTuple):
     height: int
 
 
-def readCamerasFromTxt(rgb_paths, pose_colmap_depth_paths, pose_nerfstudio_rgb_paths, depth_paths, idxs):
+def readCamerasFromTxt(rgb_paths, pose_colmap_depth_paths, depth_paths, idxs):
     cam_infos = []
     # Transform fov from degrees to radians
     #fovx = 51.98948897809546 * 2 * np.pi / 360

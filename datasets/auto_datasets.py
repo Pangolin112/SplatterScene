@@ -36,18 +36,15 @@ def move_and_overwrite_files(scene_name, index_list, folder_type):
     :param end_index: Ending index of the files to move (inclusive)
     """
     for i in index_list:
-        for j in range(0, 4):
+        for j in range(0, 3):
             if j == 0:
                 folder_name = 'rgb'
                 file_name = f"DSC{i:05d}.JPG"
             elif j == 1:
                 folder_name = 'depth'
                 file_name = f"DSC{i:05d}.jpg"
-            elif j == 2:
-                folder_name = 'pose_colmap_depth'
-                file_name = f"DSC{i:05d}.JPG.txt"
             else:
-                folder_name = 'pose_nerfstudio_rgb'
+                folder_name = 'pose_colmap_depth'
                 file_name = f"DSC{i:05d}.JPG.txt"
 
             source_folder = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/{scene_name}/{folder_name}/'
@@ -65,31 +62,6 @@ def move_and_overwrite_files(scene_name, index_list, folder_type):
             else:
                 print(f"File {file_name} does not exist in {source_folder}")
 
-
-# Get the file range from the user
-# start_index = int(input("Enter the starting index of the files to move: "))
-# end_index = int(input("Enter the ending index of the files to move: "))
-
-# delete files before copying
-# for q in range(0, 3):
-#     if q == 0:
-#         folder_type = 'train'
-#     elif q == 1:
-#         folder_type = 'val'
-#     else:
-#         folder_type = 'test'
-#     for p in range(0, 4):
-#         if p == 0:
-#             folder_name = 'rgb'
-#         elif p == 1:
-#             folder_name = 'depth'
-#         elif p == 2:
-#             folder_name = 'pose_colmap_depth'
-#         else:
-#             folder_name = 'pose_nerfstudio_rgb'
-#
-#         destination_folder = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/srn_cars/cars_{folder_type}/0cf2e9402d_train/{folder_name}/'
-#         delete_files_in_folder(destination_folder)
 
 scene_name = '0cf2e9402d'
 index_list_train = [350, 352, 354, 356, 358, 360, 362, 364, 366]
@@ -113,45 +85,39 @@ index_list_test = [351, 355, 359, 363]
 for q in range(0, 3):
     if q == 0:
         folder_type = 'train'
-        for p in range(0, 4):
+        for p in range(0, 3):
             if p == 0:
                 folder_name = 'rgb'
             elif p == 1:
                 folder_name = 'depth'
-            elif p == 2:
-                folder_name = 'pose_colmap_depth'
             else:
-                folder_name = 'pose_nerfstudio_rgb'
+                folder_name = 'pose_colmap_depth'
 
             destination_folder = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/srn_cars/cars_{folder_type}/{scene_name}_{folder_type}/{folder_name}/'
             delete_files_in_folder(destination_folder)
         move_and_overwrite_files(scene_name, index_list_train, folder_type)
     elif q == 1:
         folder_type = 'val'
-        for p in range(0, 4):
+        for p in range(0, 3):
             if p == 0:
                 folder_name = 'rgb'
             elif p == 1:
                 folder_name = 'depth'
-            elif p == 2:
-                folder_name = 'pose_colmap_depth'
             else:
-                folder_name = 'pose_nerfstudio_rgb'
+                folder_name = 'pose_colmap_depth'
 
             destination_folder = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/srn_cars/cars_{folder_type}/{scene_name}_{folder_type}/{folder_name}/'
             delete_files_in_folder(destination_folder)
         move_and_overwrite_files(scene_name, index_list_val, folder_type)
     else:
         folder_type = 'test'
-        for p in range(0, 4):
+        for p in range(0, 3):
             if p == 0:
                 folder_name = 'rgb'
             elif p == 1:
                 folder_name = 'depth'
-            elif p == 2:
-                folder_name = 'pose_colmap_depth'
             else:
-                folder_name = 'pose_nerfstudio_rgb'
+                folder_name = 'pose_colmap_depth'
 
             destination_folder = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/srn_cars/cars_{folder_type}/{scene_name}_{folder_type}/{folder_name}/'
             delete_files_in_folder(destination_folder)

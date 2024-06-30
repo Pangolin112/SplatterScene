@@ -70,11 +70,10 @@ class SRNDataset(SharedDataset):
         #pose_paths = sorted(glob.glob(os.path.join(dir_path, "pose", "*")))
         ############ for depth #################################
         pose_colmap_depth_paths = sorted(glob.glob(os.path.join(dir_path, "pose_colmap_depth", "*")))
-        pose_nerfstudio_rgb_paths = sorted(glob.glob(os.path.join(dir_path, "pose_nerfstudio_rgb", "*")))
         depth_paths = sorted(glob.glob(os.path.join(dir_path, "depth", "*")))
         ############ for depth #################################
 
-        assert len(rgb_paths) == len(pose_colmap_depth_paths) == len(pose_nerfstudio_rgb_paths) == len(depth_paths)
+        assert len(rgb_paths) == len(pose_colmap_depth_paths) == len(depth_paths)
 
         if not hasattr(self, "all_rgbs"):
             self.all_rgbs = {}
@@ -85,8 +84,6 @@ class SRNDataset(SharedDataset):
             self.all_depths = {}
             self.all_colmap_depth_Rs = {}
             self.all_colmap_depth_Ts = {}
-            self.all_nerfstudio_rgb_Rs = {}
-            self.all_nerfstudio_rgb_Ts = {}
             self.all_Ks = {}
 
         if example_id not in self.all_rgbs.keys():
@@ -98,11 +95,9 @@ class SRNDataset(SharedDataset):
             self.all_depths[example_id] = []
             self.all_colmap_depth_Rs[example_id] = []
             self.all_colmap_depth_Ts[example_id] = []
-            self.all_nerfstudio_rgb_Rs[example_id] = []
-            self.all_nerfstudio_rgb_Ts[example_id] = []
             self.all_Ks[example_id] = []
 
-            cam_infos = readCamerasFromTxt(rgb_paths, pose_colmap_depth_paths, pose_nerfstudio_rgb_paths, depth_paths, [i for i in range(len(rgb_paths))])
+            cam_infos = readCamerasFromTxt(rgb_paths, pose_colmap_depth_paths, depth_paths, [i for i in range(len(rgb_paths))])
 
             for cam_info in cam_infos:
                 R = cam_info.R
@@ -124,8 +119,6 @@ class SRNDataset(SharedDataset):
 
                 ############ for depth #################################
                 self.all_depths[example_id].append(PILtoTorch(cam_info.depth, (self.cfg.data.training_resolution, self.cfg.data.training_resolution)))
-                self.all_nerfstudio_rgb_Rs[example_id].append(torch.tensor(R))
-                self.all_nerfstudio_rgb_Ts[example_id].append(torch.tensor(T))
                 K = np.array([[42.44, 0, 64],  # stupid hardcoded values
                               [0, 42.44, 64],
                               [0, 0, 1]], dtype=np.float32)
@@ -145,8 +138,6 @@ class SRNDataset(SharedDataset):
             self.all_rgbs[example_id] = torch.stack(self.all_rgbs[example_id])
             ############ for depth #################################
             self.all_depths[example_id] = torch.stack(self.all_depths[example_id])
-            self.all_nerfstudio_rgb_Rs[example_id] = torch.stack(self.all_nerfstudio_rgb_Rs[example_id])
-            self.all_nerfstudio_rgb_Ts[example_id] = torch.stack(self.all_nerfstudio_rgb_Ts[example_id])
             self.all_Ks[example_id] = torch.stack(self.all_Ks[example_id])
             self.all_colmap_depth_Rs[example_id] = torch.stack(self.all_colmap_depth_Rs[example_id])
             self.all_colmap_depth_Ts[example_id] = torch.stack(self.all_colmap_depth_Ts[example_id])
@@ -181,8 +172,6 @@ class SRNDataset(SharedDataset):
             "full_proj_transforms": self.all_full_proj_transforms[example_id][frame_idxs],
             "camera_centers": self.all_camera_centers[example_id][frame_idxs],
             "gt_depths": self.all_depths[example_id][frame_idxs].clone(),
-            "nerfstudio_rgb_Rs": self.all_nerfstudio_rgb_Rs[example_id][frame_idxs],
-            "nerfstudio_rgb_Ts": self.all_nerfstudio_rgb_Ts[example_id][frame_idxs],
             "Ks": self.all_Ks[example_id][frame_idxs],
             "colmap_depth_Rs": self.all_colmap_depth_Rs[example_id][frame_idxs],
             "colmap_depth_Ts": self.all_colmap_depth_Ts[example_id][frame_idxs]

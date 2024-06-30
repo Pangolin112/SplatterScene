@@ -43,11 +43,13 @@ save_iterations = 1
 
 name_scene = '0cf2e9402d'
 
+output_base_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/'
+
 def project_points_to_image_plane(points, K, R, t, iteration, extrinsics_direction='world_to_camera', device='cuda'):
     points = points.to(device)
     points = points.reshape(-1, 3)
 
-    file_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/xyz_predicted/'
+    file_path = output_base_path + 'xyz_predicted/'
     file_path = file_path + str(current_time)
     if iteration == 2:
         os.makedirs(file_path, exist_ok=True)
@@ -93,19 +95,7 @@ def visualize_depth(depths, projected_points, iteration, width=128, height=128, 
     depth_image[u, v] = torch.min(depth_image[u, v], normalized_depths)
     depth_image[depth_image == float('inf')] = 0
 
-    # normalized_depths = depths
-    # depth_image = torch.full((height, width), 0.0, dtype=torch.float32, device=device)
-    # projected_points = projected_points.round().long()
-    # valid_mask = (projected_points[:, 0] >= 0) & (projected_points[:, 0] < width) & \
-    #              (projected_points[:, 1] >= 0) & (projected_points[:, 1] < height)
-    # projected_points = projected_points[valid_mask]
-    # normalized_depths = normalized_depths[valid_mask]
-    #
-    # v = projected_points[:, 0]
-    # u = projected_points[:, 1]
-    # depth_image[u, v] = torch.max(depth_image[u, v], normalized_depths)
-
-    file_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/depth_predicted/'
+    file_path = output_base_path + 'depth_predicted/'
     file_path = file_path + str(current_time)
     if iteration == 2:
         os.makedirs(file_path, exist_ok=True)
@@ -124,11 +114,6 @@ def visualize_depth(depths, projected_points, iteration, width=128, height=128, 
 def visualize_depth_gt(depths, projected_points, iteration, width=128, height=128, device='cuda'):
     depths = depths.contiguous().to(device)
     projected_points = projected_points.contiguous().to(device)
-    min_depth = torch.min(depths)
-    max_depth = torch.max(depths)
-    # print("min_depth before masking: ", min_depth)
-    # print("max_depth before masking: ", max_depth)
-    # normalized_depths = (depths - min_depth) / (max_depth - min_depth) * 255
     normalized_depths = depths
     # normalized_depths = normalized_depths.to(torch.uint8)
     depth_image = torch.full((height, width), float('inf'), dtype=torch.float32, device=device)
@@ -138,18 +123,12 @@ def visualize_depth_gt(depths, projected_points, iteration, width=128, height=12
     projected_points = projected_points[valid_mask]
     normalized_depths = normalized_depths[valid_mask]
 
-    min_depth = torch.min(normalized_depths)
-    max_depth = torch.max(normalized_depths)
-    #normalized_depths = (normalized_depths - min_depth) / (max_depth - min_depth) * 255
-    # print("min_depth after masking: ", min_depth)
-    # print("max_depth after masking: ", max_depth)
-
     v = projected_points[:, 0]
     u = projected_points[:, 1]
     depth_image[u, v] = torch.min(depth_image[u, v], normalized_depths)
     depth_image[depth_image == float('inf')] = 0
 
-    file_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/depth_from_gt/'
+    file_path = output_base_path + 'depth_from_gt/'
     file_path = file_path + str(current_time)
     if iteration == 2:
         os.makedirs(file_path, exist_ok=True)
@@ -181,19 +160,14 @@ def depth_image_to_world(depth_image, K, R, t, iteration, extrinsics_direction='
     points_camera = normalized_coords * depths.view(-1, 1)
     ones = torch.ones((points_camera.shape[0], 1), device=device)
     points_camera_homogeneous = torch.cat((points_camera, ones), dim=1)
-    # extrinsic_matrix = torch.cat((R, t.reshape(-1, 1)), dim=1)
     extrinsic_matrix = torch.eye(4, device=device)
     extrinsic_matrix[:3, :3] = R
     extrinsic_matrix[:3, 3] = t.view(-1)
-    # if extrinsics_direction == 'camera_to_world':
-    #     extrinsic_matrix_inv = torch.inverse(extrinsic_matrix)
-    # else:
-    #     extrinsic_matrix_inv = torch.cat((torch.inverse(R), (-torch.inverse(R) @ t).reshape(-1, 1)), dim=1)
     extrinsic_matrix_inv = torch.inverse(extrinsic_matrix)
     points_world_homogeneous = (extrinsic_matrix_inv @ points_camera_homogeneous.T).T
     points_world = points_world_homogeneous[:, :3]
 
-    file_path = "/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/ply_gt/"
+    file_path = output_base_path + 'ply_gt/'
     file_path = file_path + str(current_time)
     if iteration == 2:
         os.makedirs(file_path, exist_ok=True)
@@ -262,7 +236,7 @@ def align_point_clouds(source_points, target_points, iteration):
     # Scale back and translate
     source_points_aligned_final = source_points_aligned * target_scale + target_mean
 
-    file_path = "/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/aligned_predicted_ply/"
+    file_path = output_base_path + 'aligned_predicted_ply/'
     file_path = file_path + str(current_time)
 
     transformation_path = file_path + '/tranformation/'
@@ -357,7 +331,7 @@ def manual_align_point_clouds(source_points, target_points, rotation_degrees, re
     # source_points_transformed = source_points_scaled  # no translation
     # print(f'{iteration} translation: {translation_vector}')
 
-    file_path = "/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/aligned_predicted_ply/"
+    file_path = output_base_path + 'aligned_predicted_ply/'
     file_path = file_path + str(current_time)
 
     if iteration == 2:
@@ -395,7 +369,6 @@ def main(cfg: DictConfig):
 
     if fabric.is_global_zero:
         vis_dir = os.getcwd()
-        #vis_dir = '/media/qianru/12T_Data/Experiments_output/SplatterScene/experiments_out/'+str(current_time)
 
         dict_cfg = OmegaConf.to_container(
             cfg, resolve=True, throw_on_missing=True
@@ -581,10 +554,9 @@ def main(cfg: DictConfig):
                 T_input = data["colmap_depth_Ts"][b_idx, 0]
                 gt_depth_input_image = data["gt_depths"][b_idx, 0] * 255.0
                 gt_points = depth_image_to_world(gt_depth_input_image, K_input, R_input, T_input, iteration)
-                # aligned_points = align_point_clouds(points, gt_points, iteration)
-                # aligned_points = manual_align_point_clouds(points, gt_points, [-90, 0, -90], 15, [-80, 0, 0], iteration)  # colmap
-                aligned_points = manual_align_point_clouds(points, gt_points, [-90, 0, -90], 15, [0, 0, 0], iteration)  # auto translation and no need to align because the right pose given
-                # aligned_points = manual_align_point_clouds(points, gt_points, [-90, 0, -90], 60, [0, 0, 0], iteration)
+                # aligned_points = align_point_clouds(points, gt_points, iteration) # auto align
+                # aligned_points = manual_align_point_clouds(points, gt_points, [-90, 0, -90], 15, [-80, 0, 0], iteration)  # manually align
+                aligned_points = manual_align_point_clouds(points, gt_points, [-90, 0, -90], 15, [0, 0, 0], iteration)
                 ############ for depth #################################
                 for r_idx in range(cfg.data.input_images, data["gt_images"].shape[1]):
                     if "focals_pixels" in data.keys():
@@ -599,9 +571,6 @@ def main(cfg: DictConfig):
                     projected_points, predicted_depths = project_points_to_image_plane(aligned_points, K, R, T, iteration)
                     predicted_depth_image, mask_predicted = visualize_depth(predicted_depths, projected_points, iteration)
 
-                    # ============ Gradients ===============
-                    #predicted_depth_images.append(predicted_depth_image.detach().requires_grad_())
-                    # ============ Gradients ===============
                     gt_depth_image = data["gt_depths"][b_idx, r_idx] * 255.0
                     mask_gt = (gt_depth_image > 0.0).float()
                     # ============ Does not use the gt depth of each view but the reprojected point of input depth ===============
@@ -625,7 +594,7 @@ def main(cfg: DictConfig):
                                         focals_pixels=focals_pixels_render)["render"]
 
                     # ================== for rgb saving ==================
-                    file_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/rgb_predicted/'
+                    file_path = output_base_path + 'rgb_predicted/'
                     file_path = file_path + str(current_time)
                     if iteration == 2:
                         os.makedirs(file_path, exist_ok=True)
@@ -643,16 +612,8 @@ def main(cfg: DictConfig):
                         cv2.imwrite(output_image_path, bgr_image_np)
                     # ================== for rgb saving ==================
 
-                    # ============ Gradients ===============
-                    # Set requires_grad=True for rendered images
-                    #image.requires_grad = True
-                    # ============ Gradients ===============
-
                     # Put in a list for a later loss computation
                     rendered_images.append(image)
-                    # ============ Gradients ===============
-                    #rendered_images.append(image.detach().requires_grad_())
-                    # ============ Gradients ===============
                     gt_image = data["gt_images"][b_idx, r_idx]
                     gt_images.append(gt_image)
 
@@ -668,7 +629,7 @@ def main(cfg: DictConfig):
             # ============ Gradients ===============
 
             # Loss computation
-            # reconstruction
+            # rgb
             l12_loss_sum = loss_fn(rendered_images, gt_images)
             # depth
             depth_loss_sum = loss_fn(predicted_depth_images, gt_depth_images)
@@ -676,6 +637,8 @@ def main(cfg: DictConfig):
             mask_reg_loss = torch.mean(1 - mask_predicted)
 
             # lambda coefficients
+            # rgb
+            # lambda_l12 = 0.0
             # lpips
             if cfg.opt.lambda_lpips != 0:
                 lpips_loss_sum = torch.mean(
@@ -687,14 +650,6 @@ def main(cfg: DictConfig):
             # mask
             lambda_mask = 0.01
             # lambda_mask = 0.0
-            # lambda_l12 = 0.0
-
-            # if iteration < 5000 and cfg.opt.lambda_lpips == 0:
-            #     print('stage 1')
-            #     total_loss = l12_loss_sum * 0 + lpips_loss_sum * 0 + depth_loss_sum * lambda_depth + mask_reg_loss * lambda_mask
-            # if iteration >= 5000 or cfg.opt.lambda_lpips != 0:
-            #     print('stage 2')
-            #     total_loss = l12_loss_sum * lambda_l12 + lpips_loss_sum * lambda_lpips + depth_loss_sum * 0 + mask_reg_loss * 0
 
             total_loss = l12_loss_sum * lambda_l12 + lpips_loss_sum * lambda_lpips + depth_loss_sum * lambda_depth + mask_reg_loss * lambda_mask
 
