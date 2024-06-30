@@ -313,9 +313,6 @@ def manual_align_point_clouds(source_points, target_points, rotation_degrees, re
         o3d.io.write_point_cloud(ply_path, point_cloud)
 
     return source_points_transformed
-
-
-
 ############ for depth #################################
 
 
@@ -538,12 +535,14 @@ def main(cfg: DictConfig):
 
                     # directly use the gt depth of each view
                     gt_depth_image = data["gt_depths"][b_idx, r_idx] * 255.0
-                    mask_gt = (gt_depth_image > 0.0).float()
+                    mask_gt = (gt_depth_image > 5.0).float()
 
+                    # mask gt depth
                     masked_gt_depth = gt_depth_image * mask_predicted
                     gt_depth_images.append(masked_gt_depth)
 
-                    masked_predicted_depth = predicted_depth_image
+                    # mask predicted depth
+                    masked_predicted_depth = predicted_depth_image * mask_gt
                     predicted_depth_images.append(masked_predicted_depth)
                     ############ for depth #################################
 

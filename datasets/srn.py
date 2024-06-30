@@ -46,7 +46,7 @@ class SRNDataset(SharedDataset):
         self.projection_matrix = getProjectionMatrix(
             znear=self.cfg.data.znear, zfar=self.cfg.data.zfar,
             fovX=cfg.data.fov * 2 * np.pi / 360, 
-            fovY=cfg.data.fov * 2 * np.pi / 360).transpose(0,1)
+            fovY=cfg.data.fov * 2 * np.pi / 360).transpose(0, 1)
         
         self.imgs_per_obj = self.cfg.opt.imgs_per_obj
 

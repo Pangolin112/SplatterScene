@@ -83,8 +83,13 @@ index_list_test = [351, 355, 359, 363]
 # index_list_val = [134, 138, 139, 142]
 # index_list_test = [132, 136, 140, 144]
 
+index_dict = {
+    'train': index_list_train,
+    'val': index_list_val,
+    'test': index_list_test
+}
 
-for folder_type in ['train', 'val', 'test']:
+for folder_type, index_list in index_dict.items():
     for p in range(0, 3):
         if p == 0:
             folder_name = 'rgb'
@@ -95,5 +100,6 @@ for folder_type in ['train', 'val', 'test']:
 
         destination_folder = base_path + f'srn_cars/cars_{folder_type}/{scene_name}_{folder_type}/{folder_name}/'
         delete_files_in_folder(destination_folder)
-    move_and_overwrite_files(scene_name, index_list_train, folder_type)
+        move_and_overwrite_files(scene_name, index_list, folder_type)
+
 
