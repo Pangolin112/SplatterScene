@@ -10,7 +10,6 @@ def delete_files_in_folder(folder_path):
 
     :param folder_path: Path to the folder where files should be deleted
     """
-
     if not os.path.exists(folder_path):
         # Create the folder if it does not exist
         os.makedirs(folder_path)

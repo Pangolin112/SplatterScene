@@ -67,6 +67,7 @@ class SRNDataset(SharedDataset):
         dir_path = os.path.dirname(intrin_path)
         rgb_paths = sorted(glob.glob(os.path.join(dir_path, "rgb", "*")))
         #pose_paths = sorted(glob.glob(os.path.join(dir_path, "pose", "*")))
+
         ############ for depth #################################
         pose_colmap_depth_paths = sorted(glob.glob(os.path.join(dir_path, "pose_colmap_depth", "*")))
         depth_paths = sorted(glob.glob(os.path.join(dir_path, "depth", "*")))
@@ -129,12 +130,12 @@ class SRNDataset(SharedDataset):
                 self.all_colmap_depth_Ts[example_id].append(torch.tensor(T_colmap_depth))
                 ############ for depth #################################
 
-            
             self.all_world_view_transforms[example_id] = torch.stack(self.all_world_view_transforms[example_id])
             self.all_view_to_world_transforms[example_id] = torch.stack(self.all_view_to_world_transforms[example_id])
             self.all_full_proj_transforms[example_id] = torch.stack(self.all_full_proj_transforms[example_id])
             self.all_camera_centers[example_id] = torch.stack(self.all_camera_centers[example_id])
             self.all_rgbs[example_id] = torch.stack(self.all_rgbs[example_id])
+
             ############ for depth #################################
             self.all_depths[example_id] = torch.stack(self.all_depths[example_id])
             self.all_Ks[example_id] = torch.stack(self.all_Ks[example_id])

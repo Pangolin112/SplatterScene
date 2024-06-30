@@ -34,14 +34,11 @@ import time
 #torch.autograd.set_detect_anomaly(True)
 #########################for gradients, run much slower!!!!!!!!!!!!!!!!!!######################
 
-
 # +experiment=lpips_100k.yaml
 
 current_time = datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + '/'
 ############ for depth #################################
 save_iterations = 1
-
-name_scene = '0cf2e9402d'
 
 output_base_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/'
 
@@ -105,37 +102,6 @@ def visualize_depth(depths, projected_points, iteration, width=128, height=128, 
         cv2.imwrite(output_image_path, depth_image_np)
 
     # Create a mask for the predicted depth image where the pixel value is 0 (black pixels)
-    mask = (depth_image > 0).float()
-
-    return depth_image, mask
-
-
-def visualize_depth_gt(depths, projected_points, iteration, width=128, height=128, device='cuda'):
-    depths = depths.contiguous().to(device)
-    projected_points = projected_points.contiguous().to(device)
-
-    depth_image = torch.full((height, width), float('inf'), dtype=torch.float32, device=device)
-    projected_points = projected_points.round().long()
-    valid_mask = (projected_points[:, 0] >= 0) & (projected_points[:, 0] < width) & \
-                 (projected_points[:, 1] >= 0) & (projected_points[:, 1] < height)
-    projected_points = projected_points[valid_mask]
-    depths = depths[valid_mask]
-
-    v = projected_points[:, 0]
-    u = projected_points[:, 1]
-    depth_image[u, v] = torch.min(depth_image[u, v], depths)
-    depth_image[depth_image == float('inf')] = 0
-
-    file_path = output_base_path + 'depth_from_gt/'
-    file_path = file_path + str(current_time)
-    if iteration == 2:
-        os.makedirs(file_path, exist_ok=True)
-
-    if iteration % save_iterations == 0:
-        depth_image_np = depth_image.cpu().detach().numpy()
-        output_image_path = file_path + 'depth_image' + str(iteration) + '.jpg'
-        cv2.imwrite(output_image_path, depth_image_np)
-
     mask = (depth_image > 0).float()
 
     return depth_image, mask
@@ -571,17 +537,13 @@ def main(cfg: DictConfig):
                     predicted_depth_image, mask_predicted = visualize_depth(predicted_depths, projected_points, iteration)
 
                     # directly use the gt depth of each view
-                    # gt_depth_image = data["gt_depths"][b_idx, r_idx] * 255.0
-                    # mask_gt = (gt_depth_image > 0.0).float()
-
-                    # use the reprojected point of input depth
-                    reprojected_gt_points, reprojected_gt_depths = project_points_to_image_plane(gt_points, K, R, T, iteration)
-                    gt_depth_image, mask_gt = visualize_depth_gt(reprojected_gt_depths, reprojected_gt_points, iteration)
+                    gt_depth_image = data["gt_depths"][b_idx, r_idx] * 255.0
+                    mask_gt = (gt_depth_image > 0.0).float()
 
                     masked_gt_depth = gt_depth_image * mask_predicted
                     gt_depth_images.append(masked_gt_depth)
 
-                    masked_predicted_depth = predicted_depth_image * mask_gt
+                    masked_predicted_depth = predicted_depth_image
                     predicted_depth_images.append(masked_predicted_depth)
                     ############ for depth #################################
 
