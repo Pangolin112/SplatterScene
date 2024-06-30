@@ -2,6 +2,8 @@ import os
 import shutil
 
 
+base_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/'
+
 def delete_files_in_folder(folder_path):
     """
     Delete all files in the specified folder.
@@ -47,8 +49,8 @@ def move_and_overwrite_files(scene_name, index_list, folder_type):
                 folder_name = 'pose_colmap_depth'
                 file_name = f"DSC{i:05d}.JPG.txt"
 
-            source_folder = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/{scene_name}/{folder_name}/'
-            destination_folder = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/srn_cars/cars_{folder_type}/{scene_name}_{folder_type}/{folder_name}/'
+            source_folder = base_path + f'{scene_name}/{folder_name}/'
+            destination_folder = base_path + f'srn_cars/cars_{folder_type}/{scene_name}_{folder_type}/{folder_name}/'
 
             # Adjust the formatting according to your file naming convention
             source_file = os.path.join(source_folder, file_name)
@@ -82,43 +84,17 @@ index_list_test = [351, 355, 359, 363]
 # index_list_val = [134, 138, 139, 142]
 # index_list_test = [132, 136, 140, 144]
 
-for q in range(0, 3):
-    if q == 0:
-        folder_type = 'train'
-        for p in range(0, 3):
-            if p == 0:
-                folder_name = 'rgb'
-            elif p == 1:
-                folder_name = 'depth'
-            else:
-                folder_name = 'pose_colmap_depth'
 
-            destination_folder = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/srn_cars/cars_{folder_type}/{scene_name}_{folder_type}/{folder_name}/'
-            delete_files_in_folder(destination_folder)
-        move_and_overwrite_files(scene_name, index_list_train, folder_type)
-    elif q == 1:
-        folder_type = 'val'
-        for p in range(0, 3):
-            if p == 0:
-                folder_name = 'rgb'
-            elif p == 1:
-                folder_name = 'depth'
-            else:
-                folder_name = 'pose_colmap_depth'
+for folder_type in ['train', 'val', 'test']:
+    for p in range(0, 3):
+        if p == 0:
+            folder_name = 'rgb'
+        elif p == 1:
+            folder_name = 'depth'
+        else:
+            folder_name = 'pose_colmap_depth'
 
-            destination_folder = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/srn_cars/cars_{folder_type}/{scene_name}_{folder_type}/{folder_name}/'
-            delete_files_in_folder(destination_folder)
-        move_and_overwrite_files(scene_name, index_list_val, folder_type)
-    else:
-        folder_type = 'test'
-        for p in range(0, 3):
-            if p == 0:
-                folder_name = 'rgb'
-            elif p == 1:
-                folder_name = 'depth'
-            else:
-                folder_name = 'pose_colmap_depth'
+        destination_folder = base_path + f'srn_cars/cars_{folder_type}/{scene_name}_{folder_type}/{folder_name}/'
+        delete_files_in_folder(destination_folder)
+    move_and_overwrite_files(scene_name, index_list_train, folder_type)
 
-            destination_folder = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/srn_cars/cars_{folder_type}/{scene_name}_{folder_type}/{folder_name}/'
-            delete_files_in_folder(destination_folder)
-        move_and_overwrite_files(scene_name, index_list_test, folder_type)

@@ -82,17 +82,16 @@ def visualize_depth(depths, projected_points, iteration, width=128, height=128, 
     depths = depths.contiguous().to(device)
     projected_points = projected_points.contiguous().to(device)
 
-    normalized_depths = depths
     depth_image = torch.full((height, width), float('inf'), dtype=torch.float32, device=device)
     projected_points = projected_points.round().long()
     valid_mask = (projected_points[:, 0] >= 0) & (projected_points[:, 0] < width) & \
                  (projected_points[:, 1] >= 0) & (projected_points[:, 1] < height)
     projected_points = projected_points[valid_mask]
-    normalized_depths = normalized_depths[valid_mask]
+    depths = depths[valid_mask]
 
     v = projected_points[:, 0]
     u = projected_points[:, 1]
-    depth_image[u, v] = torch.min(depth_image[u, v], normalized_depths)
+    depth_image[u, v] = torch.min(depth_image[u, v], depths)
     depth_image[depth_image == float('inf')] = 0
 
     file_path = output_base_path + 'depth_predicted/'
@@ -114,18 +113,17 @@ def visualize_depth(depths, projected_points, iteration, width=128, height=128, 
 def visualize_depth_gt(depths, projected_points, iteration, width=128, height=128, device='cuda'):
     depths = depths.contiguous().to(device)
     projected_points = projected_points.contiguous().to(device)
-    normalized_depths = depths
-    # normalized_depths = normalized_depths.to(torch.uint8)
+
     depth_image = torch.full((height, width), float('inf'), dtype=torch.float32, device=device)
     projected_points = projected_points.round().long()
     valid_mask = (projected_points[:, 0] >= 0) & (projected_points[:, 0] < width) & \
                  (projected_points[:, 1] >= 0) & (projected_points[:, 1] < height)
     projected_points = projected_points[valid_mask]
-    normalized_depths = normalized_depths[valid_mask]
+    depths = depths[valid_mask]
 
     v = projected_points[:, 0]
     u = projected_points[:, 1]
-    depth_image[u, v] = torch.min(depth_image[u, v], normalized_depths)
+    depth_image[u, v] = torch.min(depth_image[u, v], depths)
     depth_image[depth_image == float('inf')] = 0
 
     file_path = output_base_path + 'depth_from_gt/'
@@ -174,7 +172,6 @@ def depth_image_to_world(depth_image, K, R, t, iteration, extrinsics_direction='
 
     if iteration % save_iterations == 0:
         points_np = points_world.detach().cpu().numpy()
-        # points_np = points_world.detach().cpu().numpy() / 100.0  # for visualization with cameras
 
         # Create an Open3D point cloud object
         point_cloud = o3d.geometry.PointCloud()
@@ -547,6 +544,7 @@ def main(cfg: DictConfig):
                 # Rendering is done sequentially because gaussian rasterization code
                 # does not support batching
                 gaussian_splat_batch = {k: v[b_idx].contiguous() for k, v in gaussian_splats.items()}
+
                 ############ for depth #################################
                 points = gaussian_splat_batch["xyz"]
                 K_input = data["Ks"][b_idx, 0]
@@ -558,6 +556,7 @@ def main(cfg: DictConfig):
                 # aligned_points = manual_align_point_clouds(points, gt_points, [-90, 0, -90], 15, [-80, 0, 0], iteration)  # manually align
                 aligned_points = manual_align_point_clouds(points, gt_points, [-90, 0, -90], 15, [0, 0, 0], iteration)
                 ############ for depth #################################
+
                 for r_idx in range(cfg.data.input_images, data["gt_images"].shape[1]):
                     if "focals_pixels" in data.keys():
                         focals_pixels_render = data["focals_pixels"][b_idx, r_idx].cpu()
@@ -571,17 +570,18 @@ def main(cfg: DictConfig):
                     projected_points, predicted_depths = project_points_to_image_plane(aligned_points, K, R, T, iteration)
                     predicted_depth_image, mask_predicted = visualize_depth(predicted_depths, projected_points, iteration)
 
-                    gt_depth_image = data["gt_depths"][b_idx, r_idx] * 255.0
-                    mask_gt = (gt_depth_image > 0.0).float()
-                    # ============ Does not use the gt depth of each view but the reprojected point of input depth ===============
-                    # reprojected_gt_points, reprojected_gt_depths = project_points_to_image_plane(gt_points, K, R, T, iteration)
-                    # gt_depth_image, mask_gt = visualize_depth_gt(reprojected_gt_depths, reprojected_gt_points, iteration)
-                    # ============ Does not use the gt depth of each view but the reprojected point of input depth ===============
+                    # directly use the gt depth of each view
+                    # gt_depth_image = data["gt_depths"][b_idx, r_idx] * 255.0
+                    # mask_gt = (gt_depth_image > 0.0).float()
+
+                    # use the reprojected point of input depth
+                    reprojected_gt_points, reprojected_gt_depths = project_points_to_image_plane(gt_points, K, R, T, iteration)
+                    gt_depth_image, mask_gt = visualize_depth_gt(reprojected_gt_depths, reprojected_gt_points, iteration)
 
                     masked_gt_depth = gt_depth_image * mask_predicted
                     gt_depth_images.append(masked_gt_depth)
 
-                    masked_predicted_depth = predicted_depth_image
+                    masked_predicted_depth = predicted_depth_image * mask_gt
                     predicted_depth_images.append(masked_predicted_depth)
                     ############ for depth #################################
 
@@ -623,11 +623,6 @@ def main(cfg: DictConfig):
             gt_depth_images = torch.stack(gt_depth_images, dim=0)
             predicted_depth_images = torch.stack(predicted_depth_images, dim=0)
 
-            # ============ Gradients ===============
-            # Set requires_grad=True for predicted depth images
-            #predicted_depth_images.requires_grad = True
-            # ============ Gradients ===============
-
             # Loss computation
             # rgb
             l12_loss_sum = loss_fn(rendered_images, gt_images)
@@ -664,37 +659,6 @@ def main(cfg: DictConfig):
             assert not total_loss.isnan(), "Found NaN loss!"
             print("finished forward {} on process {}".format(iteration, fabric.global_rank))
             fabric.backward(total_loss)
-
-            # ============ Gradients ===============
-            # specific_param_name = '_forward_module.module.network_with_offset.encoder.dec.32x32_block1.conv0.weight'
-            # for name, param in gaussian_predictor.named_parameters():
-            #     if name == specific_param_name:
-            #         if param.grad is None:
-            #             print(f"Iteration {iteration}: The gradient of {name} is None")
-            #         else:
-            #             max_grad_value = torch.max(param.grad).item()
-            #             print(f"Iteration {iteration}: The max gradient value of {name} is {max_grad_value}")
-            ####################primarily use above################################
-
-
-            # depth_loss_sum_gradients = []
-            # for name, param in gaussian_predictor.named_parameters():
-            #     if param.grad is None:
-            #         print(f"Iteration {iteration}: The gradient of {name} is None")
-            #     else:
-            #         depth_loss_sum_gradients.append(param.grad)
-            #         print(f"Iteration {iteration}: The gradient of {name} is valid with shape {param.grad.shape}")
-            #
-            # # Check if depth_loss_sum gradient is None
-            # if len(depth_loss_sum_gradients) == 0:
-            #     print(f"Iteration {iteration}: No gradients found for depth_loss_sum")
-            # else:
-            #     print(f"Iteration {iteration}: Gradients found for depth_loss_sum")
-            #rgb_gradient = rendered_images.grad.clone() if rendered_images.grad is not None else None
-            #depth_gradient = predicted_depth_images.grad.clone() if predicted_depth_images.grad is not None else None
-            #print('RGB Gradient: ', rgb_gradient)
-            #print('Depth Gradient: ', depth_gradient)
-            # ============ Gradients ===============
 
             # ============ Optimization ===============
             optimizer.step()
