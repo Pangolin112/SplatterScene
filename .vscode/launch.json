@@ -1,13 +1,15 @@
 {
     "version": "0.2.0",
     "configurations": [
+
         
       {
         "name": "Python: Train Network",
         "type": "python",
         "request": "launch",
         "program": "${workspaceFolder}/train_network.py",
-        "args": ["+datasets=cars"],
+        // "args": ["+dataset=cars +experiment=lpips_100k.yaml"],
+        "args": ["+dataset=cars"],
         "console": "integratedTerminal"
       }
     ]

@@ -49,7 +49,7 @@ def write_matrices(image_poses, output_folder):
 
 
 # Usage
-images_txt_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/images.txt'
-output_folder = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/pose/'
+images_txt_path = '/home/philipsdeng/文档/Data/data_1/0cf2e9402d/images.txt'
+output_folder = '/home/philipsdeng/文档/Data/data_1/0cf2e9402d/pose_colmap_depth/'
 image_poses = parse_images_txt(images_txt_path)
 write_matrices(image_poses, output_folder)

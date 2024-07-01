@@ -6,3 +6,4 @@ loop.mp4
 mesh.ply
 train_network_1.py
 datasets/srn_1.py
+.vscode/launch.json
