@@ -1,5 +1,7 @@
 import os
 import shutil
+
+# 从base_path模块中导入变量
 import base_path as bp
 
 base_path = bp.base_path
@@ -11,7 +13,6 @@ def delete_files_in_folder(folder_path):
     :param folder_path: Path to the folder where files should be deleted
     """
     if not os.path.exists(folder_path):
-        # Create the folder if it does not exist
         os.makedirs(folder_path)
 
     for filename in os.listdir(folder_path):
@@ -26,15 +27,13 @@ def delete_files_in_folder(folder_path):
         except Exception as e:
             print(f"Failed to delete {file_path}. Reason: {e}")
 
-
 def move_and_overwrite_files(scene_name, index_list, folder_type):
     """
     Move selected files from source_folder to destination_folder, overwriting any existing files.
 
-    :param source_folder: Path to the source folder
-    :param destination_folder: Path to the destination folder
-    :param start_index: Starting index of the files to move (inclusive)
-    :param end_index: Ending index of the files to move (inclusive)
+    :param scene_name: Name of the scene
+    :param index_list: List of file indices to move
+    :param folder_type: Type of folder (train, val, test)
     """
     for i in index_list:
         for j in range(0, 3):
@@ -48,23 +47,25 @@ def move_and_overwrite_files(scene_name, index_list, folder_type):
                 folder_name = 'pose_colmap_depth'
                 file_name = f"DSC{i:05d}.JPG.txt"
 
-            source_folder = base_path + f'{scene_name}/{folder_name}/'
-            destination_folder = base_path + f'srn_cars/cars_{folder_type}/{scene_name}_{folder_type}/{folder_name}/'
+            source_folder = os.path.join(base_path, scene_name, folder_name)
+            destination_folder = os.path.join(base_path, 'srn_cars', f'cars_{folder_type}', f'{scene_name}_{folder_type}', folder_name)
 
-            # Adjust the formatting according to your file naming convention
             source_file = os.path.join(source_folder, file_name)
             destination_file = os.path.join(destination_folder, file_name)
 
-            # Check if the source file exists
+            if not os.path.exists(destination_folder):
+                os.makedirs(destination_folder)
+
             if os.path.exists(source_file):
-                # Move the file, overwriting the destination file if it exists
-                shutil.copy(source_file, destination_file)
-                print(f"Copied {file_name} to {destination_folder}")
+                try:
+                    shutil.copy(source_file, destination_file)
+                    print(f"Copied {file_name} to {destination_folder}")
+                except Exception as e:
+                    print(f"Failed to copy {source_file} to {destination_file}. Reason: {e}")
             else:
                 print(f"File {file_name} does not exist in {source_folder}")
 
-
-scene_name = '0cf2e9402d'
+scene_name = bp.scene_name
 index_list_train = [350, 352, 354, 356, 358, 360, 362, 364, 366]
 index_list_val = [353, 357, 361, 365]
 index_list_test = [351, 355, 359, 363]
@@ -98,8 +99,6 @@ for folder_type, index_list in index_dict.items():
         else:
             folder_name = 'pose_colmap_depth'
 
-        destination_folder = base_path + f'srn_cars/cars_{folder_type}/{scene_name}_{folder_type}/{folder_name}/'
+        destination_folder = os.path.join(base_path, 'srn_cars', f'cars_{folder_type}', f'{scene_name}_{folder_type}', folder_name)
         delete_files_in_folder(destination_folder)
-        move_and_overwrite_files(scene_name, index_list, folder_type)
-
-
+    move_and_overwrite_files(scene_name, index_list, folder_type)
