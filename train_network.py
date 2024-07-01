@@ -40,7 +40,7 @@ current_time = datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + '/'
 ############ for depth #################################
 save_iterations = 1
 
-base_path = base_path.base_path
+output_base_path = base_path.base_path
 
 def project_points_to_image_plane(points, K, R, t, iteration, extrinsics_direction='world_to_camera', device='cuda'):
     points = points.to(device)
