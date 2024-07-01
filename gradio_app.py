@@ -42,7 +42,8 @@ def main():
 
     #model_path = hf_hub_download(repo_id="szymanowiczs/splatter-image-multi-category-v1", filename="model_cars.pth")
 
-    model_path = '/home/qianru/Projects/TUM/TUM_2/ADL4CV/Code/SplatterScene/experiments_out/2024-06-26/19-41-36/model_best.pth'
+    model_path = '/home/philipsdeng/文档/GitHub/SplatterScene/experiments_out/2024-07-01/19-42-43/model_best.pth'
+    # model_path = '/home/philipsdeng/文档/GitHub/SplatterScene/experiments_out/model_latest.pth'
 
     model = GaussianSplatPredictor(model_cfg)
 

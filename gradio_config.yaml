@@ -17,7 +17,7 @@ data:
   input_images: 1
   znear: 0.8
   zfar: 3.2
-  category: objaverse
+  category: cars
   white_background: true
   origin_distances: false
 opt:

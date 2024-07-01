@@ -220,27 +220,27 @@ def align_point_clouds(source_points, target_points, iteration):
         # Save the point cloud to a .ply file
         o3d.io.write_point_cloud(ply_path, point_cloud)
 
-    translation_matrix = target_mean - torch.mm(source_mean, R.t()) * target_scale
-    euler_angles = rotation_matrix_to_euler_angles(R)
-    print("Rotation Matrix:", R)
-    print("Translation Matrix:", translation_matrix)
-    print("Euler Angles (rad):", euler_angles)
-    print("Euler Angles (deg):", euler_angles * 180 / torch.pi)
-    print(f"Iteration {iteration}: Source Scale = {source_scale.item()}, Target Scale = {target_scale.item()}", " scale times: ", target_scale.item() / source_scale.item())
-    data = f"""
-    Iteration {iteration}: Source Scale = {source_scale.item()}, Target Scale = {target_scale.item()}, scale times: {target_scale.item() / source_scale.item()}
-    Rotation Matrix: {R}
-    Translation Matrix: {translation_matrix}
-    Euler Angles (rad): {euler_angles}
-    Euler Angles (deg): {euler_angles * 180 / torch.pi}
-    """
-    transformation_txt_path = transformation_path +str(iteration) + ".txt"
-    with open(transformation_txt_path, 'a') as file:
-        file.write(data)
+    # translation_matrix = target_mean - torch.mm(source_mean, R.t()) * target_scale
+    # euler_angles = rotation_matrix_to_euler_angles(R)
+    # print("Rotation Matrix:", R)
+    # print("Translation Matrix:", translation_matrix)
+    # print("Euler Angles (rad):", euler_angles)
+    # print("Euler Angles (deg):", euler_angles * 180 / torch.pi)
+    # print(f"Iteration {iteration}: Source Scale = {source_scale.item()}, Target Scale = {target_scale.item()}", " scale times: ", target_scale.item() / source_scale.item())
+    # data = f"""
+    # Iteration {iteration}: Source Scale = {source_scale.item()}, Target Scale = {target_scale.item()}, scale times: {target_scale.item() / source_scale.item()}
+    # Rotation Matrix: {R}
+    # Translation Matrix: {translation_matrix}
+    # Euler Angles (rad): {euler_angles}
+    # Euler Angles (deg): {euler_angles * 180 / torch.pi}
+    # # """
+    # transformation_txt_path = transformation_path +str(iteration) + ".txt"
+    # with open(transformation_txt_path, 'a') as file:
+    #     file.write(data)
 
     return source_points_aligned_final
 
-def manual_align_point_clouds(source_points, target_points, rotation_degrees, rescale_number, translation, iteration):
+def manual_align_point_clouds(source_points, target_points, rotation_degrees, rescale_number, translation, iteration, auto_translation_flag=False,auto_scale_flag=False):
 
     device = source_points.device
 
@@ -275,15 +275,31 @@ def manual_align_point_clouds(source_points, target_points, rotation_degrees, re
     # Apply rotation
     source_points_rotated = torch.mm(source_points, R.t())
 
-    # Apply scaling
-    source_points_scaled = source_points_rotated * rescale_number
+    
+    if auto_scale_flag:
+        # Normalize the point clouds to unit size
+        source_mean = torch.mean(source_points, dim=0, keepdim=True)
+        target_mean = torch.mean(target_points, dim=0, keepdim=True)
 
+        source_points_normalized = source_points - source_mean
+        target_points_normalized = target_points - target_mean
+
+        source_scale = torch.norm(source_points_normalized)
+        target_scale = torch.norm(target_points_normalized)
+
+        source_points_scaled = source_points_rotated * target_scale / source_scale
+    else:
+        # Apply scaling
+        source_points_scaled = source_points_rotated * rescale_number
     # Compute centroids of source and target points
     source_centroid = torch.mean(source_points_scaled, dim=0)
     target_centroid = torch.mean(target_points, dim=0)
+    if auto_translation_flag:
+        # Adjust translation vector to align centroids
+        translation_vector = target_centroid - source_centroid
 
-    # Adjust translation vector to align centroids
-    translation_vector = target_centroid - source_centroid
+    else:
+        translation_vector = torch.tensor(translation, dtype=torch.float32, device=device)
     # translation_vector = torch.tensor(translation, dtype=torch.float32, device=device)
 
     # translation_vector[0] = translation_vector[0] + torch.abs(translation_vector[0] * 0.5)
@@ -517,7 +533,8 @@ def main(cfg: DictConfig):
                 gt_points = depth_image_to_world(gt_depth_input_image, K_input, R_input, T_input, iteration)
                 # aligned_points = align_point_clouds(points, gt_points, iteration) # auto align
                 # aligned_points = manual_align_point_clouds(points, gt_points, [-90, 0, -90], 15, [-80, 0, 0], iteration)  # manually align
-                aligned_points = manual_align_point_clouds(points, gt_points, [-90, 0, -90], 15, [0, 0, 0], iteration)
+                aligned_points = manual_align_point_clouds(points, gt_points, [-90, 0, -90], 15, [0, 0, 0], iteration, auto_translation_flag=True,auto_scale_flag=True)
+                # aligned_points = manual_align_point_clouds(points, gt_points, [0, 0, 0], 1, [0, 0, 0], iteration)
                 ############ for depth #################################
 
                 for r_idx in range(cfg.data.input_images, data["gt_images"].shape[1]):
@@ -601,11 +618,11 @@ def main(cfg: DictConfig):
                     lpips_fn(rendered_images * 2 - 1, gt_images * 2 - 1),
                     )
             # depth
-            lambda_depth = 0.0001
+            lambda_depth = 0.000001
             # lambda_depth = 0.000
             # mask
-            lambda_mask = 0.01
-            # lambda_mask = 0.0
+            # lambda_mask = 0.01
+            lambda_mask = 0.0
 
             total_loss = l12_loss_sum * lambda_l12 + lpips_loss_sum * lambda_lpips + depth_loss_sum * lambda_depth + mask_reg_loss * lambda_mask
 
