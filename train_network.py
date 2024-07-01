@@ -28,7 +28,7 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 import math
 import time
-
+from configs import base_path
 
 #########################for gradients, run much slower!!!!!!!!!!!!!!!!!!######################
 #torch.autograd.set_detect_anomaly(True)
@@ -40,7 +40,7 @@ current_time = datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + '/'
 ############ for depth #################################
 save_iterations = 1
 
-output_base_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/'
+base_path = base_path.base_path
 
 def project_points_to_image_plane(points, K, R, t, iteration, extrinsics_direction='world_to_camera', device='cuda'):
     points = points.to(device)

@@ -10,8 +10,9 @@ from utils.general_utils import PILtoTorch, matrix_to_quaternion
 from utils.graphics_utils import getWorld2View2, getProjectionMatrix, getView2World
 
 from .shared_dataset import SharedDataset
+from configs import base_path
 
-SHAPENET_DATASET_ROOT = "/media/qianru/12T_Data/Data/ScanNetpp/data_1/"
+SHAPENET_DATASET_ROOT = base_path.SHAPENET_DATASET_ROOT
 assert SHAPENET_DATASET_ROOT is not None, "Update the location of the SRN Shapenet Dataset"
 
 class SRNDataset(SharedDataset):

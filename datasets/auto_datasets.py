@@ -1,8 +1,8 @@
 import os
 import shutil
+from configs import base_path
 
-
-base_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/'
+base_path = base_path.base_path
 
 def delete_files_in_folder(folder_path):
     """
