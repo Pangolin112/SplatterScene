@@ -17,12 +17,12 @@ data:
 opt:
   iterations: 800001
   base_lr: 0.00005
-  batch_size: 8 #originally 8
+  batch_size: 3 #originally 8
   betas:
     - 0.9
     - 0.999
   loss: l2
-  imgs_per_obj: 4 #originally 4
+  imgs_per_obj: 2 #originally 4
   ema: 
     use: true
     update_every: 10

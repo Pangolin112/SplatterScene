@@ -8,8 +8,8 @@
         "type": "python",
         "request": "launch",
         "program": "${workspaceFolder}/train_network.py",
-        // "args": ["+dataset=cars +experiment=lpips_100k.yaml"],
-        "args": ["+dataset=cars"],
+        "args": ["+dataset=cars +experiment=lpips_100k.yaml"],
+        // "args": ["+dataset=cars"],
         "console": "integratedTerminal"
       }
     ]

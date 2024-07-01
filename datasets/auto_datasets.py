@@ -66,15 +66,15 @@ def move_and_overwrite_files(scene_name, index_list, folder_type):
                 print(f"File {file_name} does not exist in {source_folder}")
 
 scene_name = bp.scene_name
-index_list_train = [350, 352, 354, 356, 358, 360, 362, 364, 366]
-index_list_val = [353, 357, 361, 365]
-index_list_test = [351, 355, 359, 363]
+# index_list_train = [350, 352, 354, 356, 358, 360, 362, 364, 366]
+# index_list_val = [353, 357, 361, 365]
+# index_list_test = [351, 355, 359, 363]
 # index_list_train = [350, 352, 354, 356, 358, 360, 362, 364, 366]
 # index_list_val = [353, 357, 361, 363, 365]
 # index_list_test = [351, 355, 359, 363, 365]
-# index_list_train = [350, 358, 366]
-# index_list_val = [350, 358, 366]
-# index_list_test = [350, 358, 366]
+index_list_train = [350, 358, 366]
+index_list_val = [350, 358, 366]
+index_list_test = [350, 358, 366]
 # index_list_train = [350, 366]
 # index_list_val = [350, 366]
 # index_list_test = [350, 366]
