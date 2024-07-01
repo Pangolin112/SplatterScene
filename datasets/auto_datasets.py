@@ -1,8 +1,8 @@
 import os
 import shutil
-from configs import base_path
+import base_path as bp
 
-base_path = base_path.base_path
+base_path = bp.base_path
 
 def delete_files_in_folder(folder_path):
     """

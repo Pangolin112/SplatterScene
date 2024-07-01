@@ -10,9 +10,9 @@ from utils.general_utils import PILtoTorch, matrix_to_quaternion
 from utils.graphics_utils import getWorld2View2, getProjectionMatrix, getView2World
 
 from .shared_dataset import SharedDataset
-from configs import base_path
+from . import base_path as bp
 
-SHAPENET_DATASET_ROOT = base_path.SHAPENET_DATASET_ROOT
+SHAPENET_DATASET_ROOT = bp.SHAPENET_DATASET_ROOT
 assert SHAPENET_DATASET_ROOT is not None, "Update the location of the SRN Shapenet Dataset"
 
 class SRNDataset(SharedDataset):

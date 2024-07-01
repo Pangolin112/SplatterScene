@@ -2,3 +2,7 @@ __pycache__
 */__pycache__
 experiments_out
 configs/hydra/cluster.yaml
+loop.mp4
+mesh.ply
+train_network_1.py
+datasets/srn_1.py
