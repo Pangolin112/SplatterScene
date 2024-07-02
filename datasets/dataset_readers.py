@@ -30,7 +30,7 @@ def readCamerasFromTxt(rgb_paths, pose_colmap_depth_paths, depth_paths, idxs):
     cam_infos = []
     # Transform fov from degrees to radians
     #fovx = 51.98948897809546 * 2 * np.pi / 360
-    fovx = 42.44 * 2 * np.pi / 360
+    fovx = 60 * 2 * np.pi / 360
 
     for idx in idxs:
         cam_name = pose_colmap_depth_paths[idx]

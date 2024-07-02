@@ -532,7 +532,40 @@ def main(cfg: DictConfig):
                 T_input = data["colmap_depth_Ts"][b_idx, 0]
                 gt_depth_input_image = data["gt_depths"][b_idx, 0] * 255.0
                 gt_points = depth_image_to_world(gt_depth_input_image, K_input, R_input, T_input, iteration)
-                aligned_points = align_point_clouds(points, gt_points, iteration)  # auto align
+
+                # Create the camera-to-world transformation matrix
+                R_input = R_input.transpose(1, 0)  # Transpose the rotation matrix
+                T_input = T_input.view(3, 1)  # Reshape the translation vector
+                T_camera_to_world = torch.eye(4, device=R_input.device)
+                T_camera_to_world[:3, :3] = R_input
+                T_camera_to_world[:3, 3] = (-R_input @ T_input).squeeze()
+                # Transform points to homogeneous coordinates
+                ones = torch.ones((points.shape[0], 1), device=points.device)
+                points_homogeneous = torch.cat([points, ones], dim=1)
+                # Apply the inverse transformation (camera-to-world)
+                world_points_homogeneous = (T_camera_to_world @ points_homogeneous.T).T
+                # Convert back to Cartesian coordinates
+                aligned_points = world_points_homogeneous[:, :3] / world_points_homogeneous[:, 3].unsqueeze(1)  # use input view to restore the position
+
+                file_path = output_base_path + 'aligned_predicted_ply/'
+                file_path = file_path + str(current_time)
+
+                if iteration == 2:
+                    os.makedirs(file_path, exist_ok=True)
+
+                if iteration % save_iterations == 0:
+                    points_np = aligned_points.detach().cpu().numpy()
+
+                    # Create an Open3D point cloud object
+                    point_cloud = o3d.geometry.PointCloud()
+                    point_cloud.points = o3d.utility.Vector3dVector(points_np)
+
+                    ply_path = file_path + str(iteration) + ".ply"
+
+                    # Save the point cloud to a .ply file
+                    o3d.io.write_point_cloud(ply_path, point_cloud)
+
+                # aligned_points = align_point_clouds(points, gt_points, iteration)  # auto align
                 # aligned_points = manual_align_point_clouds(points, gt_points, [-90, 0, -90], 15, [-80, 0, 0], iteration)  # manually align
                 # aligned_points = manual_align_point_clouds(points, gt_points, [-90, 0, -90], 1, [0, 0, 0], iteration, auto_scale_flag=False, auto_translation_flag=False)
                 # aligned_points = manual_align_point_clouds(points, gt_points, [-90, 0, -90], 1, [0, 0, 0], iteration, auto_scale_flag=True, auto_translation_flag=True)
@@ -557,10 +590,12 @@ def main(cfg: DictConfig):
 
                     # mask gt depth
                     masked_gt_depth = gt_depth_image * mask_predicted
+                    # masked_gt_depth = gt_depth_image
                     gt_depth_images.append(masked_gt_depth)
 
                     # mask predicted depth
                     masked_predicted_depth = predicted_depth_image * mask_gt
+                    # masked_predicted_depth = predicted_depth_image
                     predicted_depth_images.append(masked_predicted_depth)
                     ############ for depth #################################
 
