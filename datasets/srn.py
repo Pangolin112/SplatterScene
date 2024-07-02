@@ -54,9 +54,9 @@ class SRNDataset(SharedDataset):
         # in deterministic version the number of testing images
         # and number of training images are the same
         if self.cfg.data.input_images == 1:
-            self.test_input_idxs = [1]
+            self.test_input_idxs = [2]
         elif self.cfg.data.input_images == 2:
-            self.test_input_idxs = [1, 2]
+            self.test_input_idxs = [2, 4]
         else:
             raise NotImplementedError
 
@@ -164,7 +164,7 @@ class SRNDataset(SharedDataset):
         else:
             input_idxs = self.test_input_idxs
 
-            frame_idxs = torch.cat([torch.tensor(input_idxs), torch.tensor([i for i in range(3) if i not in input_idxs])], dim=0)
+            frame_idxs = torch.cat([torch.tensor(input_idxs), torch.tensor([i for i in range(4) if i not in input_idxs])], dim=0)
 
         images_and_camera_poses = {
             "gt_images": self.all_rgbs[example_id][frame_idxs].clone(),

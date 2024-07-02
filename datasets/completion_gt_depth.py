@@ -5,8 +5,9 @@ from scipy.ndimage import distance_transform_edt
 from scipy.ndimage import maximum_filter
 
 # Define the source and destination folders
-source_folder = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/render_depth'
-destination_folder = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/depth'
+scene_name = '0a7cc12c0e'
+source_folder = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/{scene_name}/render_depth'
+destination_folder = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/{scene_name}/depth'
 
 for file_name in os.listdir(source_folder):
     if file_name.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif')):  # Check for image files

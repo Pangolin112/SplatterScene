@@ -64,10 +64,10 @@ def move_and_overwrite_files(scene_name, index_list, folder_type):
             else:
                 print(f"File {file_name} does not exist in {source_folder}")
 
-scene_name = bp.scene_name
-index_list_train = [350, 352, 354, 356, 358, 360, 362, 364, 366]
-index_list_val = [353, 357, 361, 365]
-index_list_test = [351, 355, 359, 363]
+# scene_name = bp.scene_name
+# index_list_train = [350, 352, 354, 356, 358, 360, 362, 364, 366]
+# index_list_val = [353, 357, 361, 365]
+# index_list_test = [351, 355, 359, 363]
 # index_list_train = [350, 352, 354, 356, 358, 360, 362, 364, 366]
 # index_list_val = [353, 357, 361, 363, 365]
 # index_list_test = [351, 355, 359, 363, 365]
@@ -79,9 +79,14 @@ index_list_test = [351, 355, 359, 363]
 # index_list_test = [350, 366]
 
 # scene_name = '49a82360aa'
-# index_list_train = [131, 133, 135, 137, 141, 143, 145]
+# index_list_train = [131, 133, 134, 135, 137, 139, 141, 143, 145]
 # index_list_val = [134, 138, 139, 142]
 # index_list_test = [132, 136, 140, 144]
+
+scene_name = '0a7cc12c0e'
+index_list_train = [5842, 5844, 5846, 5848, 5850, 5851, 5883, 5885, 5887, 5890]
+index_list_val = [5845, 5847, 5886, 5889]
+index_list_test = [5843, 5849, 5884, 5888]
 
 index_dict = {
     'train': index_list_train,

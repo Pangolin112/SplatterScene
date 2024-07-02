@@ -4,8 +4,9 @@ import numpy as np
 from scipy.ndimage import distance_transform_edt
 
 # Define the source and destination folders
-source_folder = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/images'
-destination_folder = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/rgb'
+scene_name = '0a7cc12c0e'
+source_folder = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/{scene_name}/images'
+destination_folder = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/{scene_name}/rgb'
 
 for file_name in os.listdir(source_folder):
     if file_name.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif')):  # Check for image files

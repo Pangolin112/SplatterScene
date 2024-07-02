@@ -1,6 +1,6 @@
 # @package _global_
 opt:
   iterations: 100001
-  pretrained_ckpt: /home/qianru/Projects/TUM/TUM_2/ADL4CV/Code/SplatterScene/experiments_out/2024-07-02/10-26-34
+  pretrained_ckpt: /home/qianru/Projects/TUM/TUM_2/ADL4CV/Code/SplatterScene/experiments_out/2024-07-02/17-14-02/
   lambda_lpips: 0.01
   base_lr: 0.000005
