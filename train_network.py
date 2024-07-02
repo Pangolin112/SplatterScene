@@ -532,7 +532,7 @@ def main(cfg: DictConfig):
                 T_input = data["colmap_depth_Ts"][b_idx, 0]
                 gt_depth_input_image = data["gt_depths"][b_idx, 0] * 255.0
                 gt_points = depth_image_to_world(gt_depth_input_image, K_input, R_input, T_input, iteration)
-                aligned_points = align_point_clouds(points, gt_points, iteration) # auto align
+                aligned_points = align_point_clouds(points, gt_points, iteration)  # auto align
                 # aligned_points = manual_align_point_clouds(points, gt_points, [-90, 0, -90], 15, [-80, 0, 0], iteration)  # manually align
                 # aligned_points = manual_align_point_clouds(points, gt_points, [-90, 0, -90], 1, [0, 0, 0], iteration, auto_scale_flag=False, auto_translation_flag=False)
                 # aligned_points = manual_align_point_clouds(points, gt_points, [-90, 0, -90], 1, [0, 0, 0], iteration, auto_scale_flag=True, auto_translation_flag=True)

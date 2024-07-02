@@ -5,7 +5,7 @@ from scipy.ndimage import distance_transform_edt
 from scipy.ndimage import maximum_filter
 
 # Define the source and destination folders
-scene_name = '0a7cc12c0e'
+scene_name = '0a184cf634'
 source_folder = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/{scene_name}/render_depth'
 destination_folder = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/{scene_name}/depth'
 

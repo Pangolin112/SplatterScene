@@ -83,10 +83,15 @@ def move_and_overwrite_files(scene_name, index_list, folder_type):
 # index_list_val = [134, 138, 139, 142]
 # index_list_test = [132, 136, 140, 144]
 
-scene_name = '0a7cc12c0e'
-index_list_train = [5842, 5844, 5846, 5848, 5850, 5851, 5883, 5885, 5887, 5890]
-index_list_val = [5845, 5847, 5886, 5889]
-index_list_test = [5843, 5849, 5884, 5888]
+# scene_name = '0a7cc12c0e'
+# index_list_train = [5842, 5844, 5846, 5848, 5850, 5851, 5883, 5885, 5887, 5890]
+# index_list_val = [5845, 5847, 5886, 5889]
+# index_list_test = [5843, 5849, 5884, 5888]
+
+scene_name = '0a184cf634'
+index_list_train = [6222, 6224, 6226, 6228, 6230, 6232, 6234, 6235, 6236, 6238, 6240]
+index_list_val = [6225, 6227, 6231, 6237]
+index_list_test = [6223, 6229, 6233, 6239]
 
 index_dict = {
     'train': index_list_train,

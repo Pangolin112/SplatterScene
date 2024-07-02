@@ -4,7 +4,7 @@ import numpy as np
 from scipy.ndimage import distance_transform_edt
 
 # Define the source and destination folders
-scene_name = '0a7cc12c0e'
+scene_name = '0a184cf634'
 source_folder = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/{scene_name}/images'
 destination_folder = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/{scene_name}/rgb'
 
