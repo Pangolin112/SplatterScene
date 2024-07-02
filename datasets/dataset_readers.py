@@ -42,9 +42,7 @@ def readCamerasFromTxt(rgb_paths, pose_colmap_depth_paths, depth_paths, idxs):
         # get the world-to-camera transform and set R, T
         w2c = np.linalg.inv(c2w)
         R = np.transpose(w2c[:3, :3])  # R is stored transposed due to 'glm' in CUDA code
-        #scale = 1.0
         T = w2c[:3, 3]
-
 
         ############ for depth #################################
         R_colmap_depth = w2c[:3, :3]  # R_colmap_depth is stored not transposed as original R

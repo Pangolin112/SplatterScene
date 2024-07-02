@@ -240,7 +240,7 @@ def align_point_clouds(source_points, target_points, iteration):
 
     return source_points_aligned_final
 
-def manual_align_point_clouds(source_points, target_points, rotation_degrees, rescale_number, translation, iteration, auto_translation_flag=False,auto_scale_flag=False):
+def manual_align_point_clouds(source_points, target_points, rotation_degrees, rescale_number, translation, iteration, auto_scale_flag=False, auto_translation_flag=False):
 
     device = source_points.device
 
@@ -291,6 +291,8 @@ def manual_align_point_clouds(source_points, target_points, rotation_degrees, re
     else:
         # Apply scaling
         source_points_scaled = source_points_rotated * rescale_number
+
+
     # Compute centroids of source and target points
     source_centroid = torch.mean(source_points_scaled, dim=0)
     target_centroid = torch.mean(target_points, dim=0)
@@ -308,7 +310,6 @@ def manual_align_point_clouds(source_points, target_points, rotation_degrees, re
     # Apply translation
     source_points_transformed = source_points_scaled + translation_vector
     # source_points_transformed = source_points_scaled  # no translation
-    # print(f'{iteration} translation: {translation_vector}')
 
     file_path = output_base_path + 'aligned_predicted_ply/'
     file_path = file_path + str(current_time)
@@ -533,7 +534,7 @@ def main(cfg: DictConfig):
                 gt_points = depth_image_to_world(gt_depth_input_image, K_input, R_input, T_input, iteration)
                 # aligned_points = align_point_clouds(points, gt_points, iteration) # auto align
                 # aligned_points = manual_align_point_clouds(points, gt_points, [-90, 0, -90], 15, [-80, 0, 0], iteration)  # manually align
-                aligned_points = manual_align_point_clouds(points, gt_points, [-90, 0, -90], 15, [0, 0, 0], iteration, auto_translation_flag=True,auto_scale_flag=True)
+                aligned_points = manual_align_point_clouds(points, gt_points, [-90, 0, -90], 15, [0, 0, 0], iteration, auto_scale_flag=True, auto_translation_flag=True)
                 # aligned_points = manual_align_point_clouds(points, gt_points, [0, 0, 0], 1, [0, 0, 0], iteration)
                 ############ for depth #################################
 
@@ -552,7 +553,7 @@ def main(cfg: DictConfig):
 
                     # directly use the gt depth of each view
                     gt_depth_image = data["gt_depths"][b_idx, r_idx] * 255.0
-                    mask_gt = (gt_depth_image > 5.0).float()
+                    mask_gt = (gt_depth_image > 0.0).float()
 
                     # mask gt depth
                     masked_gt_depth = gt_depth_image * mask_predicted
@@ -618,11 +619,11 @@ def main(cfg: DictConfig):
                     lpips_fn(rendered_images * 2 - 1, gt_images * 2 - 1),
                     )
             # depth
-            lambda_depth = 0.000001
+            lambda_depth = 0.00001
             # lambda_depth = 0.000
             # mask
-            # lambda_mask = 0.01
-            lambda_mask = 0.0
+            lambda_mask = 0.01
+            # lambda_mask = 0.0
 
             total_loss = l12_loss_sum * lambda_l12 + lpips_loss_sum * lambda_lpips + depth_loss_sum * lambda_depth + mask_reg_loss * lambda_mask
 
