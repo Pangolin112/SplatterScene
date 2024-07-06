@@ -531,7 +531,7 @@ def main(cfg: DictConfig):
                 K_input = data["Ks"][b_idx, 0]
                 R_input = data["colmap_depth_Rs"][b_idx, 0]
                 T_input = data["colmap_depth_Ts"][b_idx, 0]
-                gt_depth_input_image = data["gt_depths"][b_idx, 0] * 255.0
+                gt_depth_input_image = data["gt_depths"][b_idx, 0] * 65.5350
                 gt_points = depth_image_to_world(gt_depth_input_image, K_input, R_input, T_input, iteration)
 
                 # Create the camera-to-world transformation matrix
@@ -586,7 +586,7 @@ def main(cfg: DictConfig):
                     predicted_depth_image, mask_predicted = visualize_depth(predicted_depths, projected_points, iteration)
 
                     # directly use the gt depth of each view
-                    gt_depth_image = data["gt_depths"][b_idx, r_idx] * 255.0
+                    gt_depth_image = data["gt_depths"][b_idx, r_idx] * 65.5350
                     mask_gt = (gt_depth_image > 0.0).float()
 
                     # mask gt depth
@@ -655,7 +655,7 @@ def main(cfg: DictConfig):
                     lpips_fn(rendered_images * 2 - 1, gt_images * 2 - 1),
                     )
             # depth
-            lambda_depth = 0.0001
+            lambda_depth = 1.0
             # lambda_depth = 0.000
             # mask
             lambda_mask = 0.01
@@ -692,7 +692,7 @@ def main(cfg: DictConfig):
                 if iteration % cfg.logging.loss_log == 0 and fabric.is_global_zero:
                     wandb.log({"training_loss": np.log10(total_loss.item() + 1e-8)}, step=iteration)
                     wandb.log({"training_l12_loss": np.log10(l12_loss_sum.item() + 1e-8)}, step=iteration)
-                    wandb.log({"training_depth_loss": np.log10(depth_loss_sum.item() + 1e-8)}, step=iteration)
+                    wandb.log({"training_depth_loss": np.log10(depth_loss_sum.item() * lambda_depth * 100 + 1e-8)}, step=iteration)
                     wandb.log({"training_mask_loss": np.log10(mask_reg_loss.item() + 1e-8)}, step=iteration)
                     if cfg.opt.lambda_lpips != 0:
                         wandb.log({"training_lpips_loss": np.log10(lpips_loss_sum.item() + 1e-8)}, step=iteration)

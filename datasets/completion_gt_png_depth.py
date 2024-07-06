@@ -26,18 +26,8 @@ for file_name in os.listdir(source_folder):
 
         img_array[img_array < 0] = 0
 
-        # Normalize the pixel values to fit within the 8-bit range (0-255)
-        # img_array_normalized = (img_array - 0) / (10000.0 - 0) * 255.0
-        img_array_normalized = (img_array - 0) / (65535.0 - 0) * 255.0
-        # img_array_normalized = (img_array - 0) / (5000.0 - 0) * 255.0
-
-        img_array_normalized = img_array_normalized.astype(np.uint8)
-
-        # Set pixels with values less than 10 to zero
-        img_array_normalized[img_array_normalized == 0] = 0
-
         # Pad the array to handle the boundary conditions
-        padded_img = np.pad(img_array_normalized, pad_width=5, mode='constant', constant_values=0)
+        padded_img = np.pad(img_array, pad_width=5, mode='constant', constant_values=0)
 
         # Apply the maximum filter with a size of 11x11 (5 pixels in each direction)
         max_filtered = maximum_filter(padded_img, size=11)
@@ -45,25 +35,25 @@ for file_name in os.listdir(source_folder):
         # Update only the zero values in the original image within the boundary
         for i in range(128):
             for j in range(128):
-                if img_array_normalized[i][j] == 0:
-                    img_array_normalized[i][j] = max_filtered[i][j]
+                if img_array[i][j] == 0:
+                    img_array[i][j] = max_filtered[i][j]
 
 
         for i in range(128):
             for j in range(128):
-                if img_array_normalized[i][j] == 0 and j > 0:
-                    img_array_normalized[i][j] = img_array_normalized[i][j - 1]
+                if img_array[i][j] == 0 and j > 0:
+                    img_array[i][j] = img_array[i][j - 1]
 
         for i in range(128):
             for j in range(128):
-                if img_array_normalized[i][127 - j] == 0 and j > 0:
-                    img_array_normalized[i][127 - j] = img_array_normalized[i][127 - j + 1]
+                if img_array[i][127 - j] == 0 and j > 0:
+                    img_array[i][127 - j] = img_array[i][127 - j + 1]
 
-        # Convert the normalized array back to an image in 'L' mode (8-bit pixels, black and white)
-        img_normalized = Image.fromarray(img_array_normalized, mode='L')
+        # Convert the numpy array back to a PIL Image in 16-bit mode
+        result_img = Image.fromarray(img_array.astype(np.uint16))
 
-        # Save the resized image to the destination folder as JPEG
-        jpeg_file_name = os.path.splitext(file_name)[0] + '.jpg'
-        img_normalized.save(os.path.join(destination_folder, jpeg_file_name), format='JPEG')
+        # Save the image to the destination folder in 16-bit PNG format
+        png_file_name = os.path.splitext(file_name)[0] + '.png'
+        result_img.save(os.path.join(destination_folder, png_file_name), format='PNG')
 
 print("Image resized and saved successfully.")

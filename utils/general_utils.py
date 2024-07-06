@@ -19,8 +19,22 @@ def inverse_sigmoid(x):
     return torch.log(x/(1-x))
 
 def PILtoTorch(pil_image, resolution):
+    ############ for depth #################################
+    # Determine the division factor based on image mode
+    if pil_image.mode == 'I;16':
+        division_factor = 65535.0
+    else:
+        division_factor = 255.0
+    ############ for depth #################################
+
     resized_image_PIL = pil_image.resize(resolution)
-    resized_image = torch.from_numpy(np.array(resized_image_PIL)) / 255.0
+    # resized_image = torch.from_numpy(np.array(resized_image_PIL)) / 255.0
+
+    ############ for depth #################################
+    # Convert to numpy array and then to torch tensor
+    resized_image = torch.from_numpy(np.array(resized_image_PIL).astype(np.float32)) / division_factor
+    ############ for depth #################################
+
     if len(resized_image.shape) == 3:
         return resized_image.permute(2, 0, 1)
     else:

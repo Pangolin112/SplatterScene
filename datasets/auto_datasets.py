@@ -41,7 +41,8 @@ def move_and_overwrite_files(scene_name, index_list, folder_type):
                 file_name = f"DSC{i:05d}.JPG"
             elif j == 1:
                 folder_name = 'depth'
-                file_name = f"DSC{i:05d}.jpg"
+                # file_name = f"DSC{i:05d}.jpg"
+                file_name = f"DSC{i:05d}.png"
             else:
                 folder_name = 'pose_colmap_depth'
                 file_name = f"DSC{i:05d}.JPG.txt"

@@ -4,6 +4,7 @@ import os
 import numpy as np
 import torch
 from torch.utils.data import Dataset
+import math
 
 from .dataset_readers import readCamerasFromTxt
 from utils.general_utils import PILtoTorch, matrix_to_quaternion
@@ -120,8 +121,12 @@ class SRNDataset(SharedDataset):
 
                 ############ for depth #################################
                 self.all_depths[example_id].append(PILtoTorch(cam_info.depth, (self.cfg.data.training_resolution, self.cfg.data.training_resolution)))
-                K = np.array([[bp.fov, 0, 64],  # stupid hardcoded values
-                              [0, bp.fov, 64],
+                W = 128
+                H = 128
+                f_x_new = W / (2 * math.tan(math.radians(bp.fov / 2)))
+                f_y_new = H / (2 * math.tan(math.radians(bp.fov / 2)))
+                K = np.array([[33.15431, 0, 64],  # stupid hardcoded values
+                              [0, 33.15789, 64],
                               [0, 0, 1]], dtype=np.float32)
                 self.all_Ks[example_id].append(torch.from_numpy(K))
 
