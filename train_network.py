@@ -99,6 +99,8 @@ def visualize_depth(depths, projected_points, iteration, width=128, height=128, 
 
     if iteration % save_iterations == 0:
         depth_image_np = depth_image.cpu().detach().numpy()
+        depth_max = depth_image_np.max()
+        depth_image_np = (depth_image_np / depth_max * 255).astype(np.uint8)
         output_image_path = file_path + 'depth_image' + str(iteration) + '.jpg'
         cv2.imwrite(output_image_path, depth_image_np)
 
