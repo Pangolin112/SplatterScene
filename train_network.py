@@ -655,7 +655,7 @@ def main(cfg: DictConfig):
                     lpips_fn(rendered_images * 2 - 1, gt_images * 2 - 1),
                     )
             # depth
-            lambda_depth = 1.0
+            lambda_depth = 0.5
             # lambda_depth = 0.000
             # mask
             lambda_mask = 0.01
