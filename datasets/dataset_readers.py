@@ -8,6 +8,7 @@ from utils.graphics_utils import focal2fov, fov2focal
 import numpy as np
 from pathlib import Path
 import torch
+from . import base_path as bp
 
 class CameraInfo(NamedTuple):
     uid: int
@@ -30,7 +31,7 @@ def readCamerasFromTxt(rgb_paths, pose_colmap_depth_paths, depth_paths, idxs):
     cam_infos = []
     # Transform fov from degrees to radians
     #fovx = 51.98948897809546 * 2 * np.pi / 360
-    fovx = 60 * 2 * np.pi / 360
+    fovx = bp.fov * 2 * np.pi / 360
 
     for idx in idxs:
         cam_name = pose_colmap_depth_paths[idx]

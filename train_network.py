@@ -35,12 +35,13 @@ import datasets.base_path as bp
 #########################for gradients, run much slower!!!!!!!!!!!!!!!!!!######################
 
 # +experiment=lpips_100k.yaml
+# cam_embd=pose_pos data.input_images=2 opt.imgs_per_obj=5
 
 current_time = datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + '/'
 ############ for depth #################################
 save_iterations = bp.save_iterations
 
-output_base_path = bp.base_path + bp.scene_name + '/'
+output_base_path = bp.outputs_path
 
 def project_points_to_image_plane(points, K, R, t, iteration, extrinsics_direction='world_to_camera', device='cuda'):
     points = points.to(device)
@@ -534,11 +535,11 @@ def main(cfg: DictConfig):
                 gt_points = depth_image_to_world(gt_depth_input_image, K_input, R_input, T_input, iteration)
 
                 # Create the camera-to-world transformation matrix
-                R_input = R_input.transpose(1, 0)  # Transpose the rotation matrix
-                T_input = T_input.view(3, 1)  # Reshape the translation vector
-                T_camera_to_world = torch.eye(4, device=R_input.device)
-                T_camera_to_world[:3, :3] = R_input
-                T_camera_to_world[:3, 3] = (-R_input @ T_input).squeeze()
+                R_input_new = R_input.transpose(1, 0)  # Transpose the rotation matrix
+                T_input_new = T_input.view(3, 1)  # Reshape the translation vector
+                T_camera_to_world = torch.eye(4, device=R_input_new.device)
+                T_camera_to_world[:3, :3] = R_input_new
+                T_camera_to_world[:3, 3] = (-R_input_new @ T_input_new).squeeze()
                 # Transform points to homogeneous coordinates
                 ones = torch.ones((points.shape[0], 1), device=points.device)
                 points_homogeneous = torch.cat([points, ones], dim=1)
@@ -654,7 +655,7 @@ def main(cfg: DictConfig):
                     lpips_fn(rendered_images * 2 - 1, gt_images * 2 - 1),
                     )
             # depth
-            lambda_depth = 0.00001
+            lambda_depth = 0.0001
             # lambda_depth = 0.000
             # mask
             lambda_mask = 0.01

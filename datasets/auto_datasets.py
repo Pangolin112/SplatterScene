@@ -3,7 +3,7 @@ import shutil
 
 import base_path as bp
 
-base_path = bp.base_path
+base_path = bp.srn1_path
 
 def delete_files_in_folder(folder_path):
     """
@@ -47,7 +47,7 @@ def move_and_overwrite_files(scene_name, index_list, folder_type):
                 file_name = f"DSC{i:05d}.JPG.txt"
 
             source_folder = os.path.join(base_path, scene_name, folder_name)
-            destination_folder = os.path.join(base_path, 'srn_cars', f'cars_{folder_type}', f'{scene_name}_{folder_type}', folder_name)
+            destination_folder = os.path.join(base_path, 'srn_cars', f'cars_{folder_type}', f'{scene_name}', folder_name)
 
             source_file = os.path.join(source_folder, file_name)
             destination_file = os.path.join(destination_folder, file_name)
@@ -64,38 +64,31 @@ def move_and_overwrite_files(scene_name, index_list, folder_type):
             else:
                 print(f"File {file_name} does not exist in {source_folder}")
 
-# scene_name = bp.scene_name
-# index_list_train = [350, 352, 354, 356, 358, 360, 362, 364, 366]
-# index_list_val = [353, 357, 361, 365]
-# # index_list_test = [351, 355, 359, 363]
-# index_list_test = [350, 352, 354, 356, 358, 360, 362, 364, 366, 351, 355, 359, 363, 353, 357, 361, 365]
-# index_list_train = [350, 352, 354, 356, 358, 360, 362, 364, 366]
-# index_list_val = [353, 357, 361, 363, 365]
-# index_list_test = [351, 355, 359, 363, 365]
-# index_list_train = [350, 358, 366]
-# index_list_val = [350, 358, 366]
-# index_list_test = [350, 358, 366]
-# index_list_train = [350, 366]
-# index_list_val = [350, 366]
-# index_list_test = [350, 366]
+scene_name = '0cf2e9402d'
+index_list_train = [350, 352, 354, 356, 358, 360, 362, 364, 366, 351, 355, 359, 363, 353, 357, 361, 365]
+index_list_val = [350, 352, 354, 356, 358, 360, 362, 364, 366, 351, 355, 359, 363, 353, 357, 361, 365]
+index_list_test = [350, 352, 354, 356, 358, 360, 362, 364, 366, 351, 355, 359, 363, 353, 357, 361, 365]
 
-scene_name = '49a82360aa'
-index_list_train = [131, 133, 134, 135, 137, 139, 141, 143, 145]
-index_list_val = [134, 138, 139, 142]
-# index_list_test = [132, 136, 140, 144]
-index_list_test = [131, 133, 135, 137, 139, 141, 143, 145, 132, 136, 140, 144, 134, 138, 139, 142]
+
+# scene_name = '49a82360aa'
+# index_list_train = [131, 133, 135, 137, 139, 141, 143, 145, 132, 136, 140, 144, 134, 138, 139, 142]
+# index_list_val = [131, 133, 135, 137, 139, 141, 143, 145, 132, 136, 140, 144, 134, 138, 139, 142]
+# index_list_test = [131, 133, 135, 137, 139, 141, 143, 145, 132, 136, 140, 144, 134, 138, 139, 142]
 
 # scene_name = '0a7cc12c0e'
-# index_list_train = [5842, 5844, 5846, 5848, 5850, 5851, 5883, 5885, 5887, 5890]
-# index_list_val = [5845, 5847, 5886, 5889]
-# # index_list_test = [5843, 5849, 5884, 5888]
+# index_list_train = [5842, 5844, 5846, 5848, 5850, 5851, 5883, 5885, 5887, 5890, 5843, 5849, 5884, 5888, 5845, 5847, 5886]
+# index_list_val = [5842, 5844, 5846, 5848, 5850, 5851, 5883, 5885, 5887, 5890, 5843, 5849, 5884, 5888, 5845, 5847, 5886]
 # index_list_test = [5842, 5844, 5846, 5848, 5850, 5851, 5883, 5885, 5887, 5890, 5843, 5849, 5884, 5888, 5845, 5847, 5886]
 
 # scene_name = '0a184cf634'
-# index_list_train = [6222, 6224, 6226, 6228, 6230, 6232, 6234, 6235, 6236, 6238, 6240]
-# index_list_val = [6225, 6227, 6231, 6237]
-# # index_list_test = [6223, 6229, 6233, 6239]
+# index_list_train = [6222, 6224, 6226, 6228, 6230, 6232, 6234, 6235, 6236, 6238, 6240, 6223, 6229, 6233, 6239, 6225, 6227]
+# index_list_val = [6222, 6224, 6226, 6228, 6230, 6232, 6234, 6235, 6236, 6238, 6240, 6223, 6229, 6233, 6239, 6225, 6227]
 # index_list_test = [6222, 6224, 6226, 6228, 6230, 6232, 6234, 6235, 6236, 6238, 6240, 6223, 6229, 6233, 6239, 6225, 6227]
+
+# scene_name = '1d003b07bd'
+# index_list_train = [4548, 4549, 4550, 4551, 4552, 4553, 4554, 4555, 4556, 4557, 4558, 4559, 4560, 4561, 4562, 4563, 4564]
+# index_list_val = [4548, 4549, 4550, 4551, 4552, 4553, 4554, 4555, 4556, 4557, 4558, 4559, 4560, 4561, 4562, 4563, 4564]
+# index_list_test = [4548, 4549, 4550, 4551, 4552, 4553, 4554, 4555, 4556, 4557, 4558, 4559, 4560, 4561, 4562, 4563, 4564]
 
 index_dict = {
     'train': index_list_train,
@@ -112,6 +105,6 @@ for folder_type, index_list in index_dict.items():
         else:
             folder_name = 'pose_colmap_depth'
 
-        destination_folder = os.path.join(base_path, 'srn_cars', f'cars_{folder_type}', f'{scene_name}_{folder_type}', folder_name)
+        destination_folder = os.path.join(base_path, 'srn_cars', f'cars_{folder_type}', f'{scene_name}', folder_name)
         delete_files_in_folder(destination_folder)
     move_and_overwrite_files(scene_name, index_list, folder_type)

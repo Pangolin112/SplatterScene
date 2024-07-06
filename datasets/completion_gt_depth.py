@@ -5,7 +5,7 @@ from scipy.ndimage import distance_transform_edt
 from scipy.ndimage import maximum_filter
 
 # Define the source and destination folders
-scene_name = '0a184cf634'
+scene_name = '0cf2e9402d'
 source_folder = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/{scene_name}/render_depth'
 destination_folder = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/{scene_name}/depth'
 
@@ -27,7 +27,10 @@ for file_name in os.listdir(source_folder):
         img_array[img_array < 0] = 0
 
         # Normalize the pixel values to fit within the 8-bit range (0-255)
-        img_array_normalized = (img_array - 0) / (10000.0 - 0) * 255.0
+        # img_array_normalized = (img_array - 0) / (10000.0 - 0) * 255.0
+        # img_array_normalized = (img_array - 0) / (65535.0 - 0) * 255.0
+        img_array_normalized = (img_array - 0) / (5000.0 - 0) * 255.0
+
         img_array_normalized = img_array_normalized.astype(np.uint8)
 
         # Set pixels with values less than 10 to zero

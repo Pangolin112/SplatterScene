@@ -120,8 +120,8 @@ class SRNDataset(SharedDataset):
 
                 ############ for depth #################################
                 self.all_depths[example_id].append(PILtoTorch(cam_info.depth, (self.cfg.data.training_resolution, self.cfg.data.training_resolution)))
-                K = np.array([[60, 0, 64],  # stupid hardcoded values
-                              [0, 60, 64],
+                K = np.array([[bp.fov, 0, 64],  # stupid hardcoded values
+                              [0, bp.fov, 64],
                               [0, 0, 1]], dtype=np.float32)
                 self.all_Ks[example_id].append(torch.from_numpy(K))
 
@@ -164,7 +164,7 @@ class SRNDataset(SharedDataset):
         else:
             input_idxs = self.test_input_idxs
 
-            frame_idxs = torch.cat([torch.tensor(input_idxs), torch.tensor([i for i in range(15) if i not in input_idxs])], dim=0)
+            frame_idxs = torch.cat([torch.tensor(input_idxs), torch.tensor([i for i in range(17) if i not in input_idxs])], dim=0)
 
         images_and_camera_poses = {
             "gt_images": self.all_rgbs[example_id][frame_idxs].clone(),
