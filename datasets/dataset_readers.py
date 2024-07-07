@@ -31,7 +31,8 @@ def readCamerasFromTxt(rgb_paths, pose_colmap_depth_paths, depth_paths, idxs):
     cam_infos = []
     # Transform fov from degrees to radians
     #fovx = 51.98948897809546 * 2 * np.pi / 360
-    fovx = bp.fov * 2 * np.pi / 360
+    fovx = bp.fovx * 2 * np.pi / 360
+    fovy = bp.fovy * 2 * np.pi / 360
 
     for idx in idxs:
         cam_name = pose_colmap_depth_paths[idx]
@@ -60,9 +61,10 @@ def readCamerasFromTxt(rgb_paths, pose_colmap_depth_paths, depth_paths, idxs):
         depth = Image.open(depth_path)
         ############ for depth #################################
 
-        fovy = focal2fov(fov2focal(fovx, image.size[0]), image.size[1])
-        FovY = fovy 
+        fovx = focal2fov(fov2focal(fovx, image.size[0]), image.size[1])
+        fovy = focal2fov(fov2focal(fovy, image.size[0]), image.size[1])
         FovX = fovx
+        FovY = fovy
 
         cam_infos.append(CameraInfo(uid=idx, R=R, T=T, R_colmap_depth=R_colmap_depth, T_colmap_depth=T_colmap_depth, FovY=FovY, FovX=FovX, image=image, depth=depth,
                         image_path=image_path, image_name=image_name, depth_path=depth_path, width=image.size[0], height=image.size[1]))

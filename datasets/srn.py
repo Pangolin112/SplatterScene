@@ -1,6 +1,8 @@
 import glob
 import os
 
+from einops import repeat
+
 import numpy as np
 import torch
 from torch.utils.data import Dataset
@@ -8,7 +10,7 @@ import math
 
 from .dataset_readers import readCamerasFromTxt
 from utils.general_utils import PILtoTorch, matrix_to_quaternion
-from utils.graphics_utils import getWorld2View2, getProjectionMatrix, getView2World
+from utils.graphics_utils import getWorld2View2, getProjectionMatrix, getView2World, fov2focal
 
 from .shared_dataset import SharedDataset
 from . import base_path as bp
@@ -47,8 +49,8 @@ class SRNDataset(SharedDataset):
 
         self.projection_matrix = getProjectionMatrix(
             znear=self.cfg.data.znear, zfar=self.cfg.data.zfar,
-            fovX=cfg.data.fov * 2 * np.pi / 360, 
-            fovY=cfg.data.fov * 2 * np.pi / 360).transpose(0, 1)
+            fovX=cfg.data.fovx * 2 * np.pi / 360,
+            fovY=cfg.data.fovy * 2 * np.pi / 360).transpose(0, 1)
         
         self.imgs_per_obj = self.cfg.opt.imgs_per_obj
 
@@ -57,12 +59,40 @@ class SRNDataset(SharedDataset):
         if self.cfg.data.input_images == 1:
             self.test_input_idxs = [8]
         elif self.cfg.data.input_images == 2:
-            self.test_input_idxs = [8, 16]
+            self.test_input_idxs = [4, 12]
         else:
             raise NotImplementedError
 
+        self.init_ray_dirs()
+
     def __len__(self):
         return len(self.intrins)
+
+    def init_ray_dirs(self):
+        """
+        Initialises an image of ray directions, unscaled by focal lengths.
+        """
+        x = torch.linspace(-63.5, 63.5, 128)
+        y = torch.linspace(63.5, -63.5, 128)
+        if self.cfg.model.inverted_x:
+            x = -x
+        if self.cfg.model.inverted_y:
+            y = -y
+        grid_x, grid_y = torch.meshgrid(x, y, indexing='xy')
+        ones = torch.ones_like(grid_x, dtype=grid_x.dtype)
+        ray_dirs = torch.stack([grid_x, grid_y, ones]).unsqueeze(0)
+        self.ray_dirs = ray_dirs
+
+    def get_origin_distance(self, camera_to_world):
+        # outputs the origin_distances. This helps resolve depth
+        # ambiguity in single-view depth estimation. Follows PixelNeRF
+        camera_center_to_origin = - camera_to_world[3, :3]
+        camera_z_vector = camera_to_world[2, :3]
+        origin_distances = torch.dot(camera_center_to_origin, camera_z_vector).unsqueeze(0)
+        origin_distances = repeat(origin_distances, 'c -> c h w',
+                                  h=self.cfg.data.training_resolution, w=self.cfg.data.training_resolution)
+
+        return origin_distances
 
     def load_example_id(self, example_id, intrin_path,
                         trans = np.array([0.0, 0.0, 0.0]), scale=1.0):
@@ -83,10 +113,15 @@ class SRNDataset(SharedDataset):
             self.all_view_to_world_transforms = {}
             self.all_full_proj_transforms = {}
             self.all_camera_centers = {}
+
             self.all_depths = {}
             self.all_colmap_depth_Rs = {}
             self.all_colmap_depth_Ts = {}
             self.all_Ks = {}
+
+            self.all_focals_pixels = {}
+            self.all_origin_distances = {}
+            self.all_ray_embeddings = {}
 
         if example_id not in self.all_rgbs.keys():
             self.all_rgbs[example_id] = []
@@ -94,10 +129,15 @@ class SRNDataset(SharedDataset):
             self.all_full_proj_transforms[example_id] = []
             self.all_camera_centers[example_id] = []
             self.all_view_to_world_transforms[example_id] = []
+
             self.all_depths[example_id] = []
             self.all_colmap_depth_Rs[example_id] = []
             self.all_colmap_depth_Ts[example_id] = []
             self.all_Ks[example_id] = []
+
+            self.all_focals_pixels[example_id] = []
+            self.all_origin_distances[example_id] = []
+            self.all_ray_embeddings[example_id] = []
 
             cam_infos = readCamerasFromTxt(rgb_paths, pose_colmap_depth_paths, depth_paths, [i for i in range(len(rgb_paths))])
 
@@ -121,20 +161,23 @@ class SRNDataset(SharedDataset):
 
                 ############ for depth #################################
                 self.all_depths[example_id].append(PILtoTorch(cam_info.depth, (self.cfg.data.training_resolution, self.cfg.data.training_resolution)))
-                W = 128
-                H = 128
-                f_x_new = W / (2 * math.tan(math.radians(bp.fov / 2)))
-                f_y_new = H / (2 * math.tan(math.radians(bp.fov / 2)))
                 K = np.array([[30.0, 0, 64],  # stupid hardcoded values
                               [0, 50.0, 64],
                               [0, 0, 1]], dtype=np.float32)
                 self.all_Ks[example_id].append(torch.from_numpy(K))
-
                 R_colmap_depth = cam_info.R_colmap_depth
                 T_colmap_depth = cam_info.T_colmap_depth
                 self.all_colmap_depth_Rs[example_id].append(torch.tensor(R_colmap_depth))
                 self.all_colmap_depth_Ts[example_id].append(torch.tensor(T_colmap_depth))
                 ############ for depth #################################
+
+                self.all_focals_pixels[example_id].append(
+                    torch.tensor([fov2focal(cam_info.FovX, 128), fov2focal(cam_info.FovY, 128)]))
+                self.all_origin_distances[example_id].append(
+                    self.get_origin_distance(self.all_view_to_world_transforms[example_id][-1]))
+                ray_dirs = self.ray_dirs.clone()[0]
+                ray_dirs[:2, ...] = ray_dirs[:2, ...] / self.all_focals_pixels[example_id][-1].unsqueeze(1).unsqueeze(2)
+                self.all_ray_embeddings[example_id].append(ray_dirs)
 
             self.all_world_view_transforms[example_id] = torch.stack(self.all_world_view_transforms[example_id])
             self.all_view_to_world_transforms[example_id] = torch.stack(self.all_view_to_world_transforms[example_id])
@@ -148,6 +191,10 @@ class SRNDataset(SharedDataset):
             self.all_colmap_depth_Rs[example_id] = torch.stack(self.all_colmap_depth_Rs[example_id])
             self.all_colmap_depth_Ts[example_id] = torch.stack(self.all_colmap_depth_Ts[example_id])
             ############ for depth #################################
+
+            self.all_focals_pixels[example_id] = torch.stack(self.all_focals_pixels[example_id])
+            self.all_origin_distances[example_id] = torch.stack(self.all_origin_distances[example_id])
+            self.all_ray_embeddings[example_id] = torch.stack(self.all_ray_embeddings[example_id])
 
     def get_example_id(self, index):
         intrin_path = self.intrins[index]
@@ -172,6 +219,9 @@ class SRNDataset(SharedDataset):
             frame_idxs = torch.cat([torch.tensor(input_idxs), torch.tensor([i for i in range(17) if i not in input_idxs])], dim=0)
 
         images_and_camera_poses = {
+            "ray_embeddings": self.all_ray_embeddings[example_id][frame_idxs],
+            "origin_distances": self.all_origin_distances[example_id][frame_idxs],
+            "focals_pixels": self.all_focals_pixels[example_id][frame_idxs].clone(),
             "gt_images": self.all_rgbs[example_id][frame_idxs].clone(),
             "world_view_transforms": self.all_world_view_transforms[example_id][frame_idxs],
             "view_to_world_transforms": self.all_view_to_world_transforms[example_id][frame_idxs],

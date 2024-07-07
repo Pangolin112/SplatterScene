@@ -2,10 +2,11 @@
 data:
   znear: 0.01 # originally 0.8
   zfar: 5 # originally 2
-  fov: 80.0 #69.72 #42.44  # originally 51.98948897809546
+  fovx: 130.0 #69.72 #42.44  # originally 51.98948897809546
+  fovy: 104.0
   category: cars # originally cars
   white_background: false # this was originally 'true'
-  origin_distances: false # this was originally 'false'
+  origin_distances: True # this was originally 'false'
 
 model:
   opacity_scale: 0.001 # originally 0.001

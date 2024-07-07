@@ -71,7 +71,7 @@ def evaluate_dataset(model, dataloader, device, model_cfg, save_vis=0, out_folde
 
         rot_transform_quats = data["source_cv2wT_quat"][:, :model_cfg.data.input_images]
 
-        if model_cfg.data.category == "hydrants" or model_cfg.data.category == "teddybears":
+        if model_cfg.data.category == "hydrants" or model_cfg.data.category == "teddybears" or model_cfg.data.category == "cars":
             focals_pixels_pred = data["focals_pixels"][:, :model_cfg.data.input_images, ...]
         else:
             focals_pixels_pred = None
