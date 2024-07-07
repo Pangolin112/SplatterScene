@@ -49,7 +49,7 @@ def write_matrices(image_poses, output_folder):
 
 
 # Usage
-scene_name = '1d003b07bd'
+scene_name = '5f99900f09'
 images_txt_path = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/{scene_name}/colmap/images.txt'
 output_folder = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/{scene_name}/pose_colmap_depth/'
 image_poses = parse_images_txt(images_txt_path)
