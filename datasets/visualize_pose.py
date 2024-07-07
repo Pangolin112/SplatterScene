@@ -57,7 +57,7 @@ def add_to_visualizer(directory_path, output_ply_path, world_to_camera=True, tra
         transformation = transformation_matrix @ transformation
 
         # Create coordinate frame for the axes
-        coordinate_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.2)
+        coordinate_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.05)
         coordinate_frame.transform(transformation)
 
         # Create frustum for the camera
@@ -88,13 +88,13 @@ def add_to_visualizer(directory_path, output_ply_path, world_to_camera=True, tra
 
 
 # Directory containing the transformation files
-scene_0cf2e9402d_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/srn_cars/cars_train/0cf2e9402d_train/pose_colmap_depth/'
+scene_0cf2e9402d_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/srn_cars/cars_train/0cf2e9402d/pose_colmap_depth/'
 #scene_0cf2e9402d_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/0cf2e9402d/pose_nerfstudio_rgb/'
-scene_0cf2e9402d_out_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/camera_ply_outpath/0cf2e9402d_w2c.ply'
-scene_49a82360aa_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1//49a82360aa/pose_colmap_depth/'
-scene_49a82360aa_out_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/camera_ply_outpath/49a82360aa.ply'
-srn_path = '/home/qianru/Projects/TUM/TUM_2/ADL4CV/Data/SRN/srn_cars/cars_train/1a1dcd236a1e6133860800e6696b8284/pose/'
-srn_out_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/camera_ply_outpath/srn.ply'
+scene_0cf2e9402d_out_path = '/media/qianru/12T_Data/Experiments_output/SplatterScene/outputs/camera_ply_outpath/0cf2e9402d_c2w_small_17.ply'
+# scene_49a82360aa_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1//49a82360aa/pose_colmap_depth/'
+# scene_49a82360aa_out_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/camera_ply_outpath/49a82360aa.ply'
+# srn_path = '/home/qianru/Projects/TUM/TUM_2/ADL4CV/Data/SRN/srn_cars/cars_train/1a1dcd236a1e6133860800e6696b8284/pose/'
+# srn_out_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/camera_ply_outpath/srn.ply'
 #directory_path = '/media/qianru/12T_Data/Data/ScanNetpp/data_1/49a82360aa/pose_nerfstudio_rgb/'
 # Create a visualizer
 # vis = o3d.visualization.Visualizer()
@@ -115,9 +115,9 @@ T_ScanNet_to_Open3D = np.array([[1, 0, 0, 0],
 # SRN (Camera to World) to Open3D transformation matrix (inverse of ScanNet++ to Open3D)
 T_SRN_to_Open3D = np.linalg.inv(T_ScanNet_to_Open3D)
 
-add_to_visualizer(scene_0cf2e9402d_path, scene_0cf2e9402d_out_path, True)
-add_to_visualizer(scene_49a82360aa_path, scene_49a82360aa_out_path, False)
-add_to_visualizer(srn_path, srn_out_path, True)
+add_to_visualizer(scene_0cf2e9402d_path, scene_0cf2e9402d_out_path, False)
+# add_to_visualizer(scene_49a82360aa_path, scene_49a82360aa_out_path, False)
+# add_to_visualizer(srn_path, srn_out_path, True)
 
 # Render the scene
 # vis.run()

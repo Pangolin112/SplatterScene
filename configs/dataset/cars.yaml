@@ -2,7 +2,7 @@
 data:
   znear: 0.01 # originally 0.8
   zfar: 5 # originally 2
-  fov: 80 #69.72 #42.44  # originally 51.98948897809546
+  fov: 80.0 #69.72 #42.44  # originally 51.98948897809546
   category: cars # originally cars
   white_background: false # this was originally 'true'
   origin_distances: false # this was originally 'false'

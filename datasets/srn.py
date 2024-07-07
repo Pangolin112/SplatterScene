@@ -125,8 +125,8 @@ class SRNDataset(SharedDataset):
                 H = 128
                 f_x_new = W / (2 * math.tan(math.radians(bp.fov / 2)))
                 f_y_new = H / (2 * math.tan(math.radians(bp.fov / 2)))
-                K = np.array([[33.15431, 0, 64],  # stupid hardcoded values
-                              [0, 33.15789, 64],
+                K = np.array([[30.0, 0, 64],  # stupid hardcoded values
+                              [0, 50.0, 64],
                               [0, 0, 1]], dtype=np.float32)
                 self.all_Ks[example_id].append(torch.from_numpy(K))
 

@@ -24,7 +24,7 @@ for file_name in os.listdir(source_folder):
         # Convert to numpy array for scaling
         img_array = np.array(img_resized)
 
-        img_array[img_array < 0] = 0
+        img_array[img_array < 600] = 0 # threshold for outliers
 
         # Pad the array to handle the boundary conditions
         padded_img = np.pad(img_array, pad_width=5, mode='constant', constant_values=0)
