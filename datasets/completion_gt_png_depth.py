@@ -24,30 +24,30 @@ for file_name in os.listdir(source_folder):
         # Convert to numpy array for scaling
         img_array = np.array(img_resized)
 
-        img_array[img_array < 600] = 0 # threshold for outliers
+        img_array[img_array < 0] = 0 # threshold for outliers
 
-        # Pad the array to handle the boundary conditions
-        padded_img = np.pad(img_array, pad_width=5, mode='constant', constant_values=0)
-
-        # Apply the maximum filter with a size of 11x11 (5 pixels in each direction)
-        max_filtered = maximum_filter(padded_img, size=11)
-
-        # Update only the zero values in the original image within the boundary
-        for i in range(128):
-            for j in range(128):
-                if img_array[i][j] == 0:
-                    img_array[i][j] = max_filtered[i][j]
-
-
-        for i in range(128):
-            for j in range(128):
-                if img_array[i][j] == 0 and j > 0:
-                    img_array[i][j] = img_array[i][j - 1]
-
-        for i in range(128):
-            for j in range(128):
-                if img_array[i][127 - j] == 0 and j > 0:
-                    img_array[i][127 - j] = img_array[i][127 - j + 1]
+        # # Pad the array to handle the boundary conditions
+        # padded_img = np.pad(img_array, pad_width=5, mode='constant', constant_values=0)
+        #
+        # # Apply the maximum filter with a size of 11x11 (5 pixels in each direction)
+        # max_filtered = maximum_filter(padded_img, size=11)
+        #
+        # # Update only the zero values in the original image within the boundary
+        # for i in range(128):
+        #     for j in range(128):
+        #         if img_array[i][j] == 0:
+        #             img_array[i][j] = max_filtered[i][j]
+        #
+        #
+        # for i in range(128):
+        #     for j in range(128):
+        #         if img_array[i][j] == 0 and j > 0:
+        #             img_array[i][j] = img_array[i][j - 1]
+        #
+        # for i in range(128):
+        #     for j in range(128):
+        #         if img_array[i][127 - j] == 0 and j > 0:
+        #             img_array[i][127 - j] = img_array[i][127 - j + 1]
 
         # Convert the numpy array back to a PIL Image in 16-bit mode
         result_img = Image.fromarray(img_array.astype(np.uint16))

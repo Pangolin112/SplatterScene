@@ -70,11 +70,50 @@ def move_and_overwrite_files(scene_name, index_list, folder_type):
 # index_list_val = [350, 352, 354, 356, 358, 360, 362, 364, 366, 351, 355, 359, 363, 353, 357, 361, 365]
 # index_list_test = [350, 352, 354, 356, 358, 360, 362, 364, 366, 351, 355, 359, 363, 353, 357, 361, 365]
 
-scene_name = '49a82360aa'
-index_list_train = [131, 133, 135, 137, 139, 141, 143, 145, 132, 136, 140, 144, 134, 138, 139, 142]
-index_list_val = [131, 133, 135, 137, 139, 141, 143, 145, 132, 136, 140, 144, 134, 138, 139, 142]
-index_list_test = [131, 133, 135, 137, 139, 141, 143, 145, 132, 136, 140, 144, 134, 138, 139, 142]
+# scene_name = '1d003b07bd'
+# index_list_train = [4548, 4549, 4550, 4551, 4552, 4553, 4554, 4555, 4556, 4557, 4558, 4559, 4560, 4561, 4562, 4563, 4564]
+# index_list_val = [4548, 4549, 4550, 4551, 4552, 4553, 4554, 4555, 4556, 4557, 4558, 4559, 4560, 4561, 4562, 4563, 4564]
+# index_list_test = [4548, 4549, 4550, 4551, 4552, 4553, 4554, 4555, 4556, 4557, 4558, 4559, 4560, 4561, 4562, 4563, 4564]
 
+# scene_name = '5f99900f09'
+# index_list_train = [i for i in range(5430, 5461)]
+# index_list_val = [i for i in range(5430, 5461)]
+# index_list_test = [i for i in range(5430, 5461)]
+
+# scene_name = '49a82360aa'
+# index_list_train = [131, 133, 135, 137, 139, 141, 143, 145, 132, 136, 140, 144, 134, 138, 139, 142]
+# index_list_val = [131, 133, 135, 137, 139, 141, 143, 145, 132, 136, 140, 144, 134, 138, 139, 142]
+# index_list_test = [131, 133, 135, 137, 139, 141, 143, 145, 132, 136, 140, 144, 134, 138, 139, 142]
+
+# scene_name = '6b40d1a939'
+# start = 4982
+# end = 5001
+
+# scene_name = '6ee2fc1070_0'
+# start = 7872
+# end = 7890
+
+# scene_name = '6ee2fc1070_1'
+# start = 8256
+# end = 8277
+
+# scene_name = '6ee2fc1070_2'
+# start = 8445
+# end = 8478
+
+scene_name = '6ee2fc1070_3'
+start = 8590
+end = 8620
+
+# scene_name = '6f1848d1e3'
+# start = 1373
+# end = 1395
+
+index_list_train = [i for i in range(start, end)]
+index_list_val = [i for i in range(start, end)]
+index_list_test = [i for i in range(start, end)]
+
+################### another set of focal length ###################
 # scene_name = '0a7cc12c0e'
 # index_list_train = [5842, 5844, 5846, 5848, 5850, 5851, 5883, 5885, 5887, 5890, 5843, 5849, 5884, 5888, 5845, 5847, 5886]
 # index_list_val = [5842, 5844, 5846, 5848, 5850, 5851, 5883, 5885, 5887, 5890, 5843, 5849, 5884, 5888, 5845, 5847, 5886]
@@ -85,11 +124,6 @@ index_list_test = [131, 133, 135, 137, 139, 141, 143, 145, 132, 136, 140, 144, 1
 # index_list_val = [6222, 6224, 6226, 6228, 6230, 6232, 6234, 6235, 6236, 6238, 6240, 6223, 6229, 6233, 6239, 6225, 6227]
 # index_list_test = [6222, 6224, 6226, 6228, 6230, 6232, 6234, 6235, 6236, 6238, 6240, 6223, 6229, 6233, 6239, 6225, 6227]
 
-# scene_name = '1d003b07bd'
-# index_list_train = [4548, 4549, 4550, 4551, 4552, 4553, 4554, 4555, 4556, 4557, 4558, 4559, 4560, 4561, 4562, 4563, 4564]
-# index_list_val = [4548, 4549, 4550, 4551, 4552, 4553, 4554, 4555, 4556, 4557, 4558, 4559, 4560, 4561, 4562, 4563, 4564]
-# index_list_test = [4548, 4549, 4550, 4551, 4552, 4553, 4554, 4555, 4556, 4557, 4558, 4559, 4560, 4561, 4562, 4563, 4564]
-
 # scene_name = '1f7cbbdde1'
 # index_list_train = [i for i in range(5011, 5029)]
 # index_list_val = [i for i in range(5011, 5029)]
@@ -99,11 +133,8 @@ index_list_test = [131, 133, 135, 137, 139, 141, 143, 145, 132, 136, 140, 144, 1
 # index_list_train = [i for i in range(5943, 5964)]
 # index_list_val = [i for i in range(5943, 5964)]
 # index_list_test = [i for i in range(5943, 5964)]
+################### another set of focal length ###################
 
-# scene_name = '5f99900f09'
-# index_list_train = [i for i in range(5430, 5461)]
-# index_list_val = [i for i in range(5430, 5461)]
-# index_list_test = [i for i in range(5430, 5461)]
 
 
 

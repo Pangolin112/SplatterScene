@@ -589,7 +589,7 @@ def main(cfg: DictConfig):
 
                     # directly use the gt depth of each view
                     gt_depth_image = data["gt_depths"][b_idx, r_idx] * 65.5350
-                    mask_gt = (gt_depth_image > 0.6).float()
+                    mask_gt = (gt_depth_image > 0.0).float()
 
                     # mask gt depth
                     masked_gt_depth = gt_depth_image * mask_predicted
