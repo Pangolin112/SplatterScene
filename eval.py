@@ -220,9 +220,6 @@ def evaluate_dataset(model, dataloader, device, model_cfg, save_vis=0, out_folde
         # torchvision.utils.save_image(predicted_depth_image, os.path.join(depth_example, '{0:05d}'.format(d_idx) + ".png"))
         # torchvision.utils.save_image(gt_depth_input_image, os.path.join(depth_example_gt, '{0:05d}'.format(d_idx) + ".png"))
 
-        save_depth_image_as_heatmap(predicted_depth_image, os.path.join(depth_example, '{0:05d}'.format(d_idx) + ".png"))
-        save_depth_image_as_heatmap(gt_depth_input_image, os.path.join(depth_example_gt, '{0:05d}'.format(d_idx) + ".png"))
-
         depth_all_renders_cond.append(torch.sqrt(l2_loss(predicted_depth_image * mask_predicted, gt_depth_input_image * mask_predicted)))
         ############ for depth #################################
 
@@ -241,6 +238,11 @@ def evaluate_dataset(model, dataloader, device, model_cfg, save_vis=0, out_folde
 
             if d_idx < save_vis:
                 # vis_image_preds(reconstruction, out_example)
+                ############ for depth #################################
+                if r_idx == 0:
+                    save_depth_image_as_heatmap(predicted_depth_image, os.path.join(depth_example, '{0:05d}'.format(d_idx) + ".png"))
+                    save_depth_image_as_heatmap(gt_depth_input_image, os.path.join(depth_example_gt, '{0:05d}'.format(d_idx) + ".png"))
+                ############ for depth #################################
                 torchvision.utils.save_image(image, os.path.join(out_example, '{0:05d}'.format(r_idx) + ".png"))
                 torchvision.utils.save_image(data["gt_images"][0, r_idx, ...], os.path.join(out_example_gt, '{0:05d}'.format(r_idx) + ".png"))
 
