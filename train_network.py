@@ -483,6 +483,7 @@ def main(cfg: DictConfig):
             rot_transform_quats = data["source_cv2wT_quat"][:, :cfg.data.input_images]
 
             if cfg.data.category == "hydrants" or cfg.data.category == "teddybears" or cfg.data.category == "cars":
+            # if cfg.data.category == "hydrants" or cfg.data.category == "teddybears":
                 focals_pixels_pred = data["focals_pixels"][:, :cfg.data.input_images, ...]
                 input_images = torch.cat([data["gt_images"][:, :cfg.data.input_images, ...],
                                 data["origin_distances"][:, :cfg.data.input_images, ...]],
@@ -498,6 +499,7 @@ def main(cfg: DictConfig):
 
 
             if cfg.data.category == "hydrants" or cfg.data.category == "teddybears" or cfg.data.category == "cars":
+            # if cfg.data.category == "hydrants" or cfg.data.category == "teddybears":
                 # regularize very big gaussians
                 if len(torch.where(gaussian_splats["scaling"] > 20)[0]) > 0:
                     big_gaussian_reg_loss = torch.mean(
@@ -558,6 +560,7 @@ def main(cfg: DictConfig):
 
                 if iteration % save_iterations == 0:
                     points_np = aligned_points.detach().cpu().numpy()
+                    # points_np = points.detach().cpu().numpy()
 
                     # Create an Open3D point cloud object
                     point_cloud = o3d.geometry.PointCloud()
@@ -671,6 +674,7 @@ def main(cfg: DictConfig):
             print('mask loss is    : ', mask_reg_loss.item() * lambda_mask * 100)
 
             if cfg.data.category == "hydrants" or cfg.data.category == "teddybears" or cfg.data.category == "cars":
+            # if cfg.data.category == "hydrants" or cfg.data.category == "teddybears":
                 total_loss = total_loss + big_gaussian_reg_loss + small_gaussian_reg_loss
 
             assert not total_loss.isnan(), "Found NaN loss!"
@@ -699,6 +703,7 @@ def main(cfg: DictConfig):
                     if cfg.opt.lambda_lpips != 0:
                         wandb.log({"training_lpips_loss": np.log10(lpips_loss_sum.item() + 1e-8)}, step=iteration)
                     if cfg.data.category == "hydrants" or cfg.data.category == "teddybears" or cfg.data.category == "cars":
+                    # if cfg.data.category == "hydrants" or cfg.data.category == "teddybears":
                         if type(big_gaussian_reg_loss) == float:
                             brl_for_log = big_gaussian_reg_loss
                         else:
@@ -729,6 +734,7 @@ def main(cfg: DictConfig):
                     rot_transform_quats = vis_data["source_cv2wT_quat"][:, :cfg.data.input_images]
 
                     if cfg.data.category == "hydrants" or cfg.data.category == "teddybears" or cfg.data.category == "cars":
+                    # if cfg.data.category == "hydrants" or cfg.data.category == "teddybears":
                         focals_pixels_pred = vis_data["focals_pixels"][:, :cfg.data.input_images, ...]
                         input_images = torch.cat([vis_data["gt_images"][:, :cfg.data.input_images, ...],
                                                 vis_data["origin_distances"][:, :cfg.data.input_images, ...]],

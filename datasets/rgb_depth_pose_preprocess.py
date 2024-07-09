@@ -4,7 +4,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation as R
 
 # Define the source and destination folders
-scene_name = '6ee2fc1070'
+scene_name = '355e5e32db'
 
 # rgb
 source_folder = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/{scene_name}/images'

@@ -173,8 +173,8 @@ class SRNDataset(SharedDataset):
 
                 self.all_focals_pixels[example_id].append(
                     torch.tensor([fov2focal(cam_info.FovX, 128), fov2focal(cam_info.FovY, 128)]))
-                self.all_origin_distances[example_id].append(
-                    self.get_origin_distance(self.all_view_to_world_transforms[example_id][-1]))
+                # self.all_origin_distances[example_id].append(self.get_origin_distance(self.all_view_to_world_transforms[example_id][-1]))
+                self.all_origin_distances[example_id].append(self.get_origin_distance(self.all_view_to_world_transforms[example_id][-1] * 0.0))  # important!!!!!!!!!! origin distance should be 0!
                 ray_dirs = self.ray_dirs.clone()[0]
                 ray_dirs[:2, ...] = ray_dirs[:2, ...] / self.all_focals_pixels[example_id][-1].unsqueeze(1).unsqueeze(2)
                 self.all_ray_embeddings[example_id].append(ray_dirs)

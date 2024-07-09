@@ -6,7 +6,7 @@ data:
   fovy: 103.0
   category: cars # originally cars
   white_background: false # this was originally 'true'
-  origin_distances: True # this was originally 'false'
+  origin_distances: true # this was originally 'false'
 
 model:
   opacity_scale: 0.001 # originally 0.001
