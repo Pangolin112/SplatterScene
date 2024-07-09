@@ -542,9 +542,7 @@ class GaussianSplatPredictor(nn.Module):
         # so we can preprocess it
         # for co3d this is done on the fly
         if self.cfg.data.category not in ["hydrants", "teddybears", "cars"]:
-        # if self.cfg.data.category not in ["hydrants", "teddybears"]:
             ray_dirs[:, :2, ...] /= fov2focal(self.cfg.data.fov * np.pi / 180, self.cfg.data.training_resolution)
-            # ray_dirs[:, :2, ...] /= torch.tensor([fov2focal(self.cfg.data.fovx * np.pi / 180, self.cfg.data.training_resolution), fov2focal(self.cfg.data.fovy * np.pi / 180, self.cfg.data.training_resolution)]).view(1, 2, 1, 1)
 
         self.register_buffer('ray_dirs', ray_dirs)
 
@@ -670,7 +668,6 @@ class GaussianSplatPredictor(nn.Module):
         # adjust ray directions according to fov if not done already
         ray_dirs_xy = self.ray_dirs.expand(depth_network.shape[0], 3, *self.ray_dirs.shape[2:])
         if self.cfg.data.category in ["hydrants", "teddybears", "cars"]:
-        # if self.cfg.data.category not in ["hydrants", "teddybears"]:
             assert torch.all(focals_pixels > 0)
             ray_dirs_xy = ray_dirs_xy.clone()
             ray_dirs_xy[:, :2, ...] = ray_dirs_xy[:, :2, ...] / focals_pixels.unsqueeze(2).unsqueeze(3)
@@ -707,7 +704,6 @@ class GaussianSplatPredictor(nn.Module):
             film_camera_emb = None
 
         if self.cfg.data.category in ["hydrants", "teddybears", "cars"]:
-        # if self.cfg.data.category not in ["hydrants", "teddybears"]:
             assert focals_pixels is not None
             focals_pixels = focals_pixels.reshape(B*N_views, *focals_pixels.shape[2:])
         else:

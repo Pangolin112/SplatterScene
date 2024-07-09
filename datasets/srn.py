@@ -57,7 +57,7 @@ class SRNDataset(SharedDataset):
         # in deterministic version the number of testing images
         # and number of training images are the same
         if self.cfg.data.input_images == 1:
-            self.test_input_idxs = [10]
+            self.test_input_idxs = [7]
         elif self.cfg.data.input_images == 2:
             self.test_input_idxs = [4, 12]
         else:
@@ -173,7 +173,7 @@ class SRNDataset(SharedDataset):
 
                 self.all_focals_pixels[example_id].append(
                     torch.tensor([fov2focal(cam_info.FovX, 128), fov2focal(cam_info.FovY, 128)]))
-                # self.all_origin_distances[example_id].append(self.get_origin_distance(self.all_view_to_world_transforms[example_id][-1]))
+                # self.all_origin_distances[example_id].append(self.get_origin_distance(self.all_view_to_world_transforms[example_id][-1]))  # for pure rgb
                 self.all_origin_distances[example_id].append(self.get_origin_distance(self.all_view_to_world_transforms[example_id][-1] * 0.0))  # important!!!!!!!!!! origin distance should be 0!
                 ray_dirs = self.ray_dirs.clone()[0]
                 ray_dirs[:2, ...] = ray_dirs[:2, ...] / self.all_focals_pixels[example_id][-1].unsqueeze(1).unsqueeze(2)
@@ -216,7 +216,7 @@ class SRNDataset(SharedDataset):
         else:
             input_idxs = self.test_input_idxs
 
-            frame_idxs = torch.cat([torch.tensor(input_idxs), torch.tensor([i for i in range(20) if i not in input_idxs])], dim=0)
+            frame_idxs = torch.cat([torch.tensor(input_idxs), torch.tensor([i for i in range(15) if i not in input_idxs])], dim=0)
 
         images_and_camera_poses = {
             "ray_embeddings": self.all_ray_embeddings[example_id][frame_idxs],

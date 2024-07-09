@@ -1,4 +1,4 @@
-# splatter-image
+# Splatter scene
 Official implementation of **"Splatter Image: Ultra-Fast Single-View 3D Reconstruction" (CVPR 2024)**
 
 [16 Apr 2024] Several big updates to the project since the first release:

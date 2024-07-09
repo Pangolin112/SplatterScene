@@ -25,20 +25,15 @@ import open3d as o3d
 
 import cv2
 from datetime import datetime
-import matplotlib.pyplot as plt
-import math
-import time
 import datasets.base_path as bp
-
-#########################for gradients, run much slower!!!!!!!!!!!!!!!!!!######################
-#torch.autograd.set_detect_anomaly(True)
-#########################for gradients, run much slower!!!!!!!!!!!!!!!!!!######################
 
 # +experiment=lpips_100k.yaml
 # cam_embd=pose_pos data.input_images=2 opt.imgs_per_obj=5
 
 current_time = datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + '/'
+
 ############ for depth #################################
+
 save_iterations = bp.save_iterations
 
 output_base_path = bp.outputs_path
@@ -152,187 +147,6 @@ def depth_image_to_world(depth_image, K, R, t, iteration, extrinsics_direction='
         o3d.io.write_point_cloud(ply_path, point_cloud)
 
     return points_world.view(H, W, 3)
-
-
-def rotation_matrix_to_euler_angles(R):
-    assert R.shape == (3, 3), "Input rotation matrix must be 3x3"
-
-    sy = torch.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
-    singular = sy < 1e-6
-
-    if not singular:
-        x = torch.atan2(R[2, 1], R[2, 2])
-        y = torch.atan2(-R[2, 0], sy)
-        z = torch.atan2(R[1, 0], R[0, 0])
-    else:
-        x = torch.atan2(-R[1, 2], R[1, 1])
-        y = torch.atan2(-R[2, 0], sy)
-        z = 0
-
-    return torch.tensor([x, y, z])
-
-
-def align_point_clouds(source_points, target_points, iteration):
-    source_points = source_points.reshape(-1, 3)
-    target_points = target_points.reshape(-1, 3)
-
-
-    # Normalize the point clouds to unit size
-    source_mean = torch.mean(source_points, dim=0, keepdim=True)
-    target_mean = torch.mean(target_points, dim=0, keepdim=True)
-
-    source_points_normalized = source_points - source_mean
-    target_points_normalized = target_points - target_mean
-
-    source_scale = torch.norm(source_points_normalized)
-    target_scale = torch.norm(target_points_normalized)
-    ###########################Do not use inplace operation#########################################
-    source_points_normalized = source_points_normalized / source_scale
-    target_points_normalized = target_points_normalized / target_scale
-    ###########################Do not use inplace operation#########################################
-
-    # Apply Procrustes Analysis for scaling and rotation
-    M = torch.mm(source_points_normalized.t(), target_points_normalized)
-    U, S, Vt = torch.svd(M)
-    R = torch.mm(U, Vt.t())
-
-    # with torch.no_grad():
-    source_points_aligned = torch.mm(source_points_normalized, R)
-
-    # Scale back and translate
-    source_points_aligned_final = source_points_aligned * target_scale + target_mean
-
-    file_path = output_base_path + 'aligned_predicted_ply/'
-    file_path = file_path + str(current_time)
-
-    transformation_path = file_path + '/tranformation/'
-
-    if iteration == 2:
-        os.makedirs(file_path, exist_ok=True)
-        os.makedirs(transformation_path, exist_ok=True)
-
-    if iteration % save_iterations == 0:
-        points_np = source_points_aligned_final.detach().cpu().numpy()
-
-        # Create an Open3D point cloud object
-        point_cloud = o3d.geometry.PointCloud()
-        point_cloud.points = o3d.utility.Vector3dVector(points_np)
-
-        ply_path = file_path + str(iteration) + ".ply"
-
-        # Save the point cloud to a .ply file
-        o3d.io.write_point_cloud(ply_path, point_cloud)
-
-    # translation_matrix = target_mean - torch.mm(source_mean, R.t()) * target_scale
-    # euler_angles = rotation_matrix_to_euler_angles(R)
-    # print("Rotation Matrix:", R)
-    # print("Translation Matrix:", translation_matrix)
-    # print("Euler Angles (rad):", euler_angles)
-    # print("Euler Angles (deg):", euler_angles * 180 / torch.pi)
-    # print(f"Iteration {iteration}: Source Scale = {source_scale.item()}, Target Scale = {target_scale.item()}", " scale times: ", target_scale.item() / source_scale.item())
-    # data = f"""
-    # Iteration {iteration}: Source Scale = {source_scale.item()}, Target Scale = {target_scale.item()}, scale times: {target_scale.item() / source_scale.item()}
-    # Rotation Matrix: {R}
-    # Translation Matrix: {translation_matrix}
-    # Euler Angles (rad): {euler_angles}
-    # Euler Angles (deg): {euler_angles * 180 / torch.pi}
-    # # """
-    # transformation_txt_path = transformation_path +str(iteration) + ".txt"
-    # with open(transformation_txt_path, 'a') as file:
-    #     file.write(data)
-
-    return source_points_aligned_final
-
-def manual_align_point_clouds(source_points, target_points, rotation_degrees, rescale_number, translation, iteration, auto_scale_flag=False, auto_translation_flag=False):
-
-    device = source_points.device
-
-    source_points = source_points.reshape(-1, 3)
-    target_points = target_points.reshape(-1, 3)
-
-    # Convert rotation degrees to radians
-    rotation_radians = [math.radians(deg) for deg in rotation_degrees]
-
-    # Create rotation matrices for each axis
-    Rx = torch.tensor([
-        [1, 0, 0],
-        [0, math.cos(rotation_radians[0]), -math.sin(rotation_radians[0])],
-        [0, math.sin(rotation_radians[0]), math.cos(rotation_radians[0])]
-    ], dtype=torch.float32, device=device)
-
-    Ry = torch.tensor([
-        [math.cos(rotation_radians[1]), 0, math.sin(rotation_radians[1])],
-        [0, 1, 0],
-        [-math.sin(rotation_radians[1]), 0, math.cos(rotation_radians[1])]
-    ], dtype=torch.float32, device=device)
-
-    Rz = torch.tensor([
-        [math.cos(rotation_radians[2]), -math.sin(rotation_radians[2]), 0],
-        [math.sin(rotation_radians[2]), math.cos(rotation_radians[2]), 0],
-        [0, 0, 1]
-    ], dtype=torch.float32, device=device)
-
-    # Combine rotations
-    R = torch.mm(Rz, torch.mm(Ry, Rx))
-
-    # Apply rotation
-    source_points_rotated = torch.mm(source_points, R.t())
-
-    
-    if auto_scale_flag:
-        # Normalize the point clouds to unit size
-        source_mean = torch.mean(source_points, dim=0, keepdim=True)
-        target_mean = torch.mean(target_points, dim=0, keepdim=True)
-
-        source_points_normalized = source_points - source_mean
-        target_points_normalized = target_points - target_mean
-
-        source_scale = torch.norm(source_points_normalized)
-        target_scale = torch.norm(target_points_normalized)
-
-        source_points_scaled = source_points_rotated * target_scale / source_scale
-    else:
-        # Apply scaling
-        source_points_scaled = source_points_rotated * rescale_number
-
-
-    # Compute centroids of source and target points
-    source_centroid = torch.mean(source_points_scaled, dim=0)
-    target_centroid = torch.mean(target_points, dim=0)
-    if auto_translation_flag:
-        # Adjust translation vector to align centroids
-        translation_vector = target_centroid - source_centroid
-
-    else:
-        translation_vector = torch.tensor(translation, dtype=torch.float32, device=device)
-    # translation_vector = torch.tensor(translation, dtype=torch.float32, device=device)
-
-    # translation_vector[0] = translation_vector[0] + torch.abs(translation_vector[0] * 0.5)
-    # translation_vector[1] = translation_vector[1] - torch.abs(translation_vector[1] * 0.3)
-
-    # Apply translation
-    source_points_transformed = source_points_scaled + translation_vector
-    # source_points_transformed = source_points_scaled  # no translation
-
-    file_path = output_base_path + 'aligned_predicted_ply/'
-    file_path = file_path + str(current_time)
-
-    if iteration == 2:
-        os.makedirs(file_path, exist_ok=True)
-
-    if iteration % save_iterations == 0:
-        points_np = source_points_transformed.detach().cpu().numpy()
-
-        # Create an Open3D point cloud object
-        point_cloud = o3d.geometry.PointCloud()
-        point_cloud.points = o3d.utility.Vector3dVector(points_np)
-
-        ply_path = file_path + str(iteration) + ".ply"
-
-        # Save the point cloud to a .ply file
-        o3d.io.write_point_cloud(ply_path, point_cloud)
-
-    return source_points_transformed
 ############ for depth #################################
 
 
@@ -483,7 +297,6 @@ def main(cfg: DictConfig):
             rot_transform_quats = data["source_cv2wT_quat"][:, :cfg.data.input_images]
 
             if cfg.data.category == "hydrants" or cfg.data.category == "teddybears" or cfg.data.category == "cars":
-            # if cfg.data.category == "hydrants" or cfg.data.category == "teddybears":
                 focals_pixels_pred = data["focals_pixels"][:, :cfg.data.input_images, ...]
                 input_images = torch.cat([data["gt_images"][:, :cfg.data.input_images, ...],
                                 data["origin_distances"][:, :cfg.data.input_images, ...]],
@@ -499,7 +312,6 @@ def main(cfg: DictConfig):
 
 
             if cfg.data.category == "hydrants" or cfg.data.category == "teddybears" or cfg.data.category == "cars":
-            # if cfg.data.category == "hydrants" or cfg.data.category == "teddybears":
                 # regularize very big gaussians
                 if len(torch.where(gaussian_splats["scaling"] > 20)[0]) > 0:
                     big_gaussian_reg_loss = torch.mean(
@@ -570,11 +382,6 @@ def main(cfg: DictConfig):
 
                     # Save the point cloud to a .ply file
                     o3d.io.write_point_cloud(ply_path, point_cloud)
-
-                # aligned_points = align_point_clouds(points, gt_points, iteration)  # auto align
-                # aligned_points = manual_align_point_clouds(points, gt_points, [-90, 0, -90], 15, [-80, 0, 0], iteration)  # manually align
-                # aligned_points = manual_align_point_clouds(points, gt_points, [-90, 0, -90], 1, [0, 0, 0], iteration, auto_scale_flag=False, auto_translation_flag=False)
-                # aligned_points = manual_align_point_clouds(points, gt_points, [-90, 0, -90], 1, [0, 0, 0], iteration, auto_scale_flag=True, auto_translation_flag=True)
                 ############ for depth #################################
 
                 for r_idx in range(cfg.data.input_images, data["gt_images"].shape[1]):
@@ -674,7 +481,6 @@ def main(cfg: DictConfig):
             print('mask loss is    : ', mask_reg_loss.item() * lambda_mask * 100)
 
             if cfg.data.category == "hydrants" or cfg.data.category == "teddybears" or cfg.data.category == "cars":
-            # if cfg.data.category == "hydrants" or cfg.data.category == "teddybears":
                 total_loss = total_loss + big_gaussian_reg_loss + small_gaussian_reg_loss
 
             assert not total_loss.isnan(), "Found NaN loss!"
@@ -698,12 +504,11 @@ def main(cfg: DictConfig):
                 if iteration % cfg.logging.loss_log == 0 and fabric.is_global_zero:
                     wandb.log({"training_loss": np.log10(total_loss.item() + 1e-8)}, step=iteration)
                     wandb.log({"training_l12_loss": np.log10(l12_loss_sum.item() + 1e-8)}, step=iteration)
-                    wandb.log({"training_depth_loss": np.log10(depth_loss_sum.item() * lambda_depth * 100 + 1e-8)}, step=iteration)
+                    wandb.log({"training_depth_loss": np.log10(depth_loss_sum.item() * 0.5 * 100 + 1e-8)}, step=iteration)
                     wandb.log({"training_mask_loss": np.log10(mask_reg_loss.item() + 1e-8)}, step=iteration)
                     if cfg.opt.lambda_lpips != 0:
                         wandb.log({"training_lpips_loss": np.log10(lpips_loss_sum.item() + 1e-8)}, step=iteration)
                     if cfg.data.category == "hydrants" or cfg.data.category == "teddybears" or cfg.data.category == "cars":
-                    # if cfg.data.category == "hydrants" or cfg.data.category == "teddybears":
                         if type(big_gaussian_reg_loss) == float:
                             brl_for_log = big_gaussian_reg_loss
                         else:
@@ -734,7 +539,6 @@ def main(cfg: DictConfig):
                     rot_transform_quats = vis_data["source_cv2wT_quat"][:, :cfg.data.input_images]
 
                     if cfg.data.category == "hydrants" or cfg.data.category == "teddybears" or cfg.data.category == "cars":
-                    # if cfg.data.category == "hydrants" or cfg.data.category == "teddybears":
                         focals_pixels_pred = vis_data["focals_pixels"][:, :cfg.data.input_images, ...]
                         input_images = torch.cat([vis_data["gt_images"][:, :cfg.data.input_images, ...],
                                                 vis_data["origin_distances"][:, :cfg.data.input_images, ...]],
