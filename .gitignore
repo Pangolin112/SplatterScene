@@ -4,6 +4,7 @@ experiments_out
 configs/hydra/cluster.yaml
 loop.mp4
 mesh.ply
-train_network_1.py
-datasets/srn_1.py
 .vscode/launch.json
+.idea
+.vscode
+datasets/visualize_pose.py
