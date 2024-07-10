@@ -1,7 +1,0 @@
-0_09c1414f1b_2 psnr_novel 8.007120306675251 ssim_novel 0.005879485406554663 lpips_novel 0.7273298777066745 RMSE_depth_cond tensor(0., device='cuda:0')
-1_09c1414f1b_4 psnr_novel 15.18370582507207 ssim_novel 0.5207820053283985 lpips_novel 0.5129058613226964 RMSE_depth_cond tensor(6.3469, device='cuda:0')
-2_54b6127146_4 psnr_novel 10.385741499754099 ssim_novel 0.18130890795817742 lpips_novel 0.6141141057014465 RMSE_depth_cond tensor(0.9464, device='cuda:0')
-3_6ee2fc1070_1 psnr_novel 10.404614943724413 ssim_novel 0.3819482922554016 lpips_novel 0.49006913946225095 RMSE_depth_cond tensor(4.4119, device='cuda:0')
-4_6f1848d1e3 psnr_novel 5.466665189999801 ssim_novel 0.0023650235223333137 lpips_novel 0.7588472778980548 RMSE_depth_cond tensor(0.1886, device='cuda:0')
-5_7f4d173c9c_4 psnr_novel 15.157268689228939 ssim_novel 0.5343456314160273 lpips_novel 0.420039014174388 RMSE_depth_cond tensor(1.7018, device='cuda:0')
-6_7f4d173c9c_5 psnr_novel 15.69385996231666 ssim_novel 0.43738935314691985 lpips_novel 0.5531184856708233 RMSE_depth_cond tensor(7.9626, device='cuda:0')
