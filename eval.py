@@ -223,7 +223,7 @@ def evaluate_dataset(model, dataloader, device, model_cfg, save_vis=0, out_folde
         depth_all_renders_cond.append(torch.sqrt(l2_loss(predicted_depth_image * mask_predicted, gt_depth_input_image * mask_predicted)))
         ############ for depth #################################
 
-        for r_idx in range( data["gt_images"].shape[1]):
+        for r_idx in range(data["gt_images"].shape[1]):
             if "focals_pixels" in data.keys():
                 focals_pixels_render = data["focals_pixels"][0, r_idx]
             else:
@@ -392,6 +392,7 @@ def main(dataset_name, experiment_path, device_idx, split='test', save_vis=0, ou
     else:
         cfg_path = os.path.join(experiment_path, ".hydra", "config.yaml")
         model_path = os.path.join(experiment_path, "model_latest.pth")
+        # model_path = os.path.join(experiment_path, "model_best.pth")
     
     # load cfg
     training_cfg = OmegaConf.load(cfg_path)

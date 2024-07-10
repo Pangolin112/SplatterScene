@@ -6,5 +6,6 @@ loop.mp4
 mesh.ply
 .vscode/launch.json
 .idea
-.vscode
+*/.vscode
 datasets/visualize_pose.py
+scores.txt
