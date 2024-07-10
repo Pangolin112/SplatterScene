@@ -217,10 +217,31 @@ def evaluate_dataset(model, dataloader, device, model_cfg, save_vis=0, out_folde
         projected_points, predicted_depths = project_points_to_image_plane(aligned_points, K_input, R_input, T_input)
         predicted_depth_image, mask_predicted = visualize_depth(predicted_depths, projected_points)
 
-        # torchvision.utils.save_image(predicted_depth_image, os.path.join(depth_example, '{0:05d}'.format(d_idx) + ".png"))
-        # torchvision.utils.save_image(gt_depth_input_image, os.path.join(depth_example_gt, '{0:05d}'.format(d_idx) + ".png"))
-
         depth_all_renders_cond.append(torch.sqrt(l2_loss(predicted_depth_image * mask_predicted, gt_depth_input_image * mask_predicted)))
+        if model_cfg.data.input_images == 2:
+            K_input = data["Ks"][0, 1]
+            R_input = data["colmap_depth_Rs"][0, 1]
+            T_input = data["colmap_depth_Ts"][0, 1]
+            gt_depth_input_image_1 = data["gt_depths"][0, 1] * 65.5350
+
+            # Create the camera-to-world transformation matrix
+            R_input_new = R_input.transpose(1, 0)  # Transpose the rotation matrix
+            T_input_new = T_input.view(3, 1)  # Reshape the translation vector
+            T_camera_to_world = torch.eye(4, device=R_input_new.device)
+            T_camera_to_world[:3, :3] = R_input_new
+            T_camera_to_world[:3, 3] = (-R_input_new @ T_input_new).squeeze()
+            # Transform points to homogeneous coordinates
+            ones = torch.ones((points.shape[0], 1), device=points.device)
+            points_homogeneous = torch.cat([points, ones], dim=1)
+            # Apply the inverse transformation (camera-to-world)
+            world_points_homogeneous = (T_camera_to_world @ points_homogeneous.T).T
+            # Convert back to Cartesian coordinates
+            aligned_points = world_points_homogeneous[:, :3] / world_points_homogeneous[:, 3].unsqueeze(1)
+
+            projected_points, predicted_depths = project_points_to_image_plane(aligned_points, K_input, R_input, T_input)
+            predicted_depth_image_1, mask_predicted = visualize_depth(predicted_depths, projected_points)
+
+            depth_all_renders_cond.append(torch.sqrt(l2_loss(predicted_depth_image_1 * mask_predicted, gt_depth_input_image_1 * mask_predicted)))
         ############ for depth #################################
 
         for r_idx in range(data["gt_images"].shape[1]):
@@ -239,9 +260,11 @@ def evaluate_dataset(model, dataloader, device, model_cfg, save_vis=0, out_folde
             if d_idx < save_vis:
                 # vis_image_preds(reconstruction, out_example)
                 ############ for depth #################################
-                if r_idx == 0:
-                    save_depth_image_as_heatmap(predicted_depth_image, os.path.join(depth_example, '{0:05d}'.format(d_idx) + ".png"))
-                    save_depth_image_as_heatmap(gt_depth_input_image, os.path.join(depth_example_gt, '{0:05d}'.format(d_idx) + ".png"))
+                save_depth_image_as_heatmap(predicted_depth_image, os.path.join(depth_example, '{0:05d}'.format(d_idx) + ".png"))
+                save_depth_image_as_heatmap(gt_depth_input_image, os.path.join(depth_example_gt, '{0:05d}'.format(d_idx) + ".png"))
+                if model_cfg.data.input_images == 2:
+                    save_depth_image_as_heatmap(predicted_depth_image_1, os.path.join(depth_example, '{0:05d}'.format(d_idx) + "_1.png"))
+                    save_depth_image_as_heatmap(gt_depth_input_image_1, os.path.join(depth_example_gt, '{0:05d}'.format(d_idx) + "_1.png"))
                 ############ for depth #################################
                 torchvision.utils.save_image(image, os.path.join(out_example, '{0:05d}'.format(r_idx) + ".png"))
                 torchvision.utils.save_image(data["gt_images"][0, r_idx, ...], os.path.join(out_example_gt, '{0:05d}'.format(r_idx) + ".png"))
