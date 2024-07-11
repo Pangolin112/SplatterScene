@@ -15,8 +15,8 @@ from utils.graphics_utils import getWorld2View2, getProjectionMatrix, getView2Wo
 from .shared_dataset import SharedDataset
 from . import base_path as bp
 
-SHAPENET_DATASET_ROOT = bp.SHAPENET_DATASET_ROOT
-assert SHAPENET_DATASET_ROOT is not None, "Update the location of the SRN Shapenet Dataset"
+SCANNETPP_DATASET_ROOT = bp.SHAPENET_DATASET_ROOT
+assert SCANNETPP_DATASET_ROOT is not None, "Update the location of the SRN Shapenet Dataset"
 
 
 class SRNDataset(SharedDataset):
@@ -29,7 +29,7 @@ class SRNDataset(SharedDataset):
         if dataset_name == "vis":
             self.dataset_name = "test"
 
-        self.base_path = os.path.join(SHAPENET_DATASET_ROOT, "srn_{}/{}_{}".format(cfg.data.category,
+        self.base_path = os.path.join(SCANNETPP_DATASET_ROOT, "scannetpp_{}/{}_{}".format(cfg.data.category,
                                                                                    cfg.data.category,
                                                                                    self.dataset_name))
 
