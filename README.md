@@ -1,16 +1,7 @@
-# Splatter scene
-Official implementation of **"Splatter Image: Ultra-Fast Single-View 3D Reconstruction" (CVPR 2024)**
+# Splatter Scene
 
-[16 Apr 2024] Several big updates to the project since the first release:
-- We can now reconstruct **any object**: we trained open-category model trained on Objaverse in just 7 GPU days
-- We now have a [demo](https://huggingface.co/spaces/szymanowiczs/splatter_image) where you can upload your own pictures of **any** object and have our model reconstruct it
-- Models for all 6 datasets are now !released!. We trained 6 models: on Objaverse, multi-category ShapeNet, CO3D hydrants, CO3D teddybears, ShapeNet cars and ShapeNet chairs.
-- SOTA on multi-category ShapeNet
-- Support for multi-GPU training
-- No camera pose pre-processing in CO3D
-
-<img src="./demo_examples/demo_screenshot.png"
-            alt="Demo screenshot."/>
+<img src="./demo_examples/poster.png"
+            alt="Poster."/>
 # Demo
 
 Check out the online [demo](https://huggingface.co/spaces/szymanowiczs/splatter_image). Running the demo locally will often be even faster and you will be able to see the loops rendered with Gaussian Splatting (as opposed to the extracted .ply object which can show artefacts). To run the demo locally, simply follow the installation instructions below, and afterwards call:
