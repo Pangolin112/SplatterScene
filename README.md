@@ -84,7 +84,7 @@ python eval.py scannetpp --experiment_path $experiment_path
 
 To evaluate on the validation split, call with option `--split val`.
 
-You can set for how many objects to save renders with option `--save_vis`.
+You can set for how many scenes to save renders with option `--save_vis`.
 You can set where to save the renders with option `--out_folder`.
 
 ## Training
@@ -101,7 +101,7 @@ python train_network.py +dataset=scannetpp cam_embd=pose_pos data.input_images=2
 
 ## Code structure
 
-Training loop is implemented in `train_network.py` and evaluation code is in `eval.py`. Datasets are implemented in `datasets/ScanNet++.py`. Model is implemented in `scene/gaussian_predictor.py`. The call to renderer can be found in `gaussian_renderer/__init__.py`.
+Training loop is implemented in `train_network.py` and evaluation code is in `eval.py`. Datasets are implemented in `datasets/scannetpp.py`. Model is implemented in `scene/gaussian_predictor.py`. The call to renderer can be found in `gaussian_renderer/__init__.py`.
 
 ## Camera conventions
 
