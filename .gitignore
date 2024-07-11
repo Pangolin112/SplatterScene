@@ -4,8 +4,6 @@ experiments_out
 configs/hydra/cluster.yaml
 loop.mp4
 mesh.ply
-.vscode/launch.json
 .idea
-*/.vscode
-datasets/visualize_pose.py
 scores.txt
+

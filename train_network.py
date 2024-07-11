@@ -247,12 +247,8 @@ def main(cfg: DictConfig):
     background = torch.tensor(bg_color, dtype=torch.float32)
     background = fabric.to_device(background)
 
-    if cfg.data.category in ["nmr", "objaverse"]:
-        num_workers = 12
-        persistent_workers = True
-    else:
-        num_workers = 0
-        persistent_workers = False
+    num_workers = 0
+    persistent_workers = False
 
     dataset = get_dataset(cfg, "train")
     dataloader = DataLoader(dataset,
@@ -296,38 +292,33 @@ def main(cfg: DictConfig):
             # =============== Prepare input ================
             rot_transform_quats = data["source_cv2wT_quat"][:, :cfg.data.input_images]
 
-            if cfg.data.category == "hydrants" or cfg.data.category == "teddybears" or cfg.data.category == "cars" or cfg.data.category == "scannetpp":
-                focals_pixels_pred = data["focals_pixels"][:, :cfg.data.input_images, ...]
-                input_images = torch.cat([data["gt_images"][:, :cfg.data.input_images, ...],
-                                data["origin_distances"][:, :cfg.data.input_images, ...]],
-                                dim=2)
-            else:
-                focals_pixels_pred = None
-                input_images = data["gt_images"][:, :cfg.data.input_images, ...]
+            focals_pixels_pred = data["focals_pixels"][:, :cfg.data.input_images, ...]
+            input_images = torch.cat([data["gt_images"][:, :cfg.data.input_images, ...],
+                            data["origin_distances"][:, :cfg.data.input_images, ...]],
+                            dim=2)
 
             gaussian_splats = gaussian_predictor(input_images,
                                                 data["view_to_world_transforms"][:, :cfg.data.input_images, ...],
                                                 rot_transform_quats,
                                                 focals_pixels_pred)
 
+            # regularize very big gaussians
+            if len(torch.where(gaussian_splats["scaling"] > 20)[0]) > 0:
+                big_gaussian_reg_loss = torch.mean(
+                    gaussian_splats["scaling"][torch.where(gaussian_splats["scaling"] > 20)] * 0.1)
+                print('Regularising {} big Gaussians on iteration {}'.format(
+                    len(torch.where(gaussian_splats["scaling"] > 20)[0]), iteration))
+            else:
+                big_gaussian_reg_loss = 0.0
+            # regularize very small Gaussians
+            if len(torch.where(gaussian_splats["scaling"] < 1e-5)[0]) > 0:
+                small_gaussian_reg_loss = torch.mean(
+                    -torch.log(gaussian_splats["scaling"][torch.where(gaussian_splats["scaling"] < 1e-5)]) * 0.1)
+                print('Regularising {} small Gaussians on iteration {}'.format(
+                    len(torch.where(gaussian_splats["scaling"] < 1e-5)[0]), iteration))
+            else:
+                small_gaussian_reg_loss = 0.0
 
-            if cfg.data.category == "hydrants" or cfg.data.category == "teddybears" or cfg.data.category == "cars" or cfg.data.category == "scannetpp":
-                # regularize very big gaussians
-                if len(torch.where(gaussian_splats["scaling"] > 20)[0]) > 0:
-                    big_gaussian_reg_loss = torch.mean(
-                        gaussian_splats["scaling"][torch.where(gaussian_splats["scaling"] > 20)] * 0.1)
-                    print('Regularising {} big Gaussians on iteration {}'.format(
-                        len(torch.where(gaussian_splats["scaling"] > 20)[0]), iteration))
-                else:
-                    big_gaussian_reg_loss = 0.0
-                # regularize very small Gaussians
-                if len(torch.where(gaussian_splats["scaling"] < 1e-5)[0]) > 0:
-                    small_gaussian_reg_loss = torch.mean(
-                        -torch.log(gaussian_splats["scaling"][torch.where(gaussian_splats["scaling"] < 1e-5)]) * 0.1)
-                    print('Regularising {} small Gaussians on iteration {}'.format(
-                        len(torch.where(gaussian_splats["scaling"] < 1e-5)[0]), iteration))
-                else:
-                    small_gaussian_reg_loss = 0.0
             # Render
             l12_loss_sum = 0.0
             lpips_loss_sum = 0.0
@@ -480,8 +471,8 @@ def main(cfg: DictConfig):
             print('depth loss is   : ', depth_loss_sum.item() * lambda_depth * 100)
             print('mask loss is    : ', mask_reg_loss.item() * lambda_mask * 100)
 
-            if cfg.data.category == "hydrants" or cfg.data.category == "teddybears" or cfg.data.category == "cars" or cfg.data.category == "scannetpp":
-                total_loss = total_loss + big_gaussian_reg_loss + small_gaussian_reg_loss
+
+            total_loss = total_loss + big_gaussian_reg_loss + small_gaussian_reg_loss
 
             assert not total_loss.isnan(), "Found NaN loss!"
             print("finished forward {} on process {}".format(iteration, fabric.global_rank))
@@ -508,17 +499,16 @@ def main(cfg: DictConfig):
                     wandb.log({"training_mask_loss": np.log10(mask_reg_loss.item() + 1e-8)}, step=iteration)
                     if cfg.opt.lambda_lpips != 0:
                         wandb.log({"training_lpips_loss": np.log10(lpips_loss_sum.item() + 1e-8)}, step=iteration)
-                    if cfg.data.category == "hydrants" or cfg.data.category == "teddybears" or cfg.data.category == "cars" or cfg.data.category == "scannetpp":
-                        if type(big_gaussian_reg_loss) == float:
-                            brl_for_log = big_gaussian_reg_loss
-                        else:
-                            brl_for_log = big_gaussian_reg_loss.item()
-                        if type(small_gaussian_reg_loss) == float:
-                            srl_for_log = small_gaussian_reg_loss
-                        else:
-                            srl_for_log = small_gaussian_reg_loss.item()
-                        wandb.log({"reg_loss_big": np.log10(brl_for_log + 1e-8)}, step=iteration)
-                        wandb.log({"reg_loss_small": np.log10(srl_for_log + 1e-8)}, step=iteration)
+                    if type(big_gaussian_reg_loss) == float:
+                        brl_for_log = big_gaussian_reg_loss
+                    else:
+                        brl_for_log = big_gaussian_reg_loss.item()
+                    if type(small_gaussian_reg_loss) == float:
+                        srl_for_log = small_gaussian_reg_loss
+                    else:
+                        srl_for_log = small_gaussian_reg_loss.item()
+                    wandb.log({"reg_loss_big": np.log10(brl_for_log + 1e-8)}, step=iteration)
+                    wandb.log({"reg_loss_small": np.log10(srl_for_log + 1e-8)}, step=iteration)
 
                 if (iteration % cfg.logging.render_log == 0 or iteration == 1) and fabric.is_global_zero:
                     wandb.log({"render": wandb.Image(image.clamp(0.0, 1.0).permute(1, 2, 0).detach().cpu().numpy())}, step=iteration)
@@ -538,14 +528,10 @@ def main(cfg: DictConfig):
 
                     rot_transform_quats = vis_data["source_cv2wT_quat"][:, :cfg.data.input_images]
 
-                    if cfg.data.category == "hydrants" or cfg.data.category == "teddybears" or cfg.data.category == "cars" or cfg.data.category == "scannetpp":
-                        focals_pixels_pred = vis_data["focals_pixels"][:, :cfg.data.input_images, ...]
-                        input_images = torch.cat([vis_data["gt_images"][:, :cfg.data.input_images, ...],
-                                                vis_data["origin_distances"][:, :cfg.data.input_images, ...]],
-                                                dim=2)
-                    else:
-                        focals_pixels_pred = None
-                        input_images = vis_data["gt_images"][:, :cfg.data.input_images, ...]
+                    focals_pixels_pred = vis_data["focals_pixels"][:, :cfg.data.input_images, ...]
+                    input_images = torch.cat([vis_data["gt_images"][:, :cfg.data.input_images, ...],
+                                            vis_data["origin_distances"][:, :cfg.data.input_images, ...]],
+                                            dim=2)
 
                     gaussian_splats_vis = gaussian_predictor(input_images,
                                                         vis_data["view_to_world_transforms"][:, :cfg.data.input_images, ...],

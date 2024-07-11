@@ -67,7 +67,7 @@ For preprocessing, first undistort and render the depth using colmap following t
 
 ## Pretrained models
 
-Pretrained models training on 35 ScanNet++ scenes are available via [Pretrained Models](https://drive.google.com/drive/folders/1hGTX3XAeV3bd8tpp-CGDJDOdZB9LJrDu?usp=sharing)(for now the pretrained model's dataset category is still cars, we will upload the version that matches scannetpp).
+Pretrained models training on 35 ScanNet++ scenes are available via [Pretrained Models](https://drive.google.com/drive/folders/1hGTX3XAeV3bd8tpp-CGDJDOdZB9LJrDu?usp=sharing)(For now the pretrained model's dataset category is still cars, we will upload the version that matches scannetpp later).
 
 ## Evaluation
 

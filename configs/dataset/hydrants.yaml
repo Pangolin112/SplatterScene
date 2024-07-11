@@ -1,8 +1,0 @@
-# @package _global_
-data:
-  znear: -2.0
-  zfar: 2.0
-  category: hydrants
-  white_background: false
-  origin_distances: true
-

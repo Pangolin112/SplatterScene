@@ -403,14 +403,7 @@ def main(dataset_name, experiment_path, device_idx, split='test', save_vis=0, ou
     torch.cuda.set_device(device)
 
     if args.experiment_path is None:
-        cfg_path = hf_hub_download(repo_id="szymanowiczs/splatter-image-v1", 
-                                 filename="config_{}.yaml".format(dataset_name))
-        if dataset_name in ["gso", "objaverse"]:
-            model_name = "latest"
-        else:
-            model_name = dataset_name
-        model_path = hf_hub_download(repo_id="szymanowiczs/splatter-image-v1", 
-                            filename="model_{}.pth".format(model_name))
+        print("Please provide a path to the experiment folder")
         
     else:
         cfg_path = os.path.join(experiment_path, ".hydra", "config.yaml")
@@ -422,11 +415,9 @@ def main(dataset_name, experiment_path, device_idx, split='test', save_vis=0, ou
 
     # check that training and testing datasets match if not using official models 
     if args.experiment_path is not None:
-        if dataset_name == "gso":
-            # GSO model must have been trained on objaverse
-            assert training_cfg.data.category == "objaverse", "Model-dataset mismatch"
-        else:
-            assert training_cfg.data.category == dataset_name, "Model-dataset mismatch"
+        assert training_cfg.data.category == dataset_name, "Model-dataset mismatch"
+    else:
+        print("Please provide a dataset name that matches the model")
 
     # load model
     model = GaussianSplatPredictor(training_cfg)
@@ -436,9 +427,6 @@ def main(dataset_name, experiment_path, device_idx, split='test', save_vis=0, ou
     model.eval()
     print('Loaded model!')
 
-    # override dataset in cfg if testing objaverse model
-    if training_cfg.data.category == "objaverse" and split in ["test", "vis"]:
-        training_cfg.data.category = "gso"
     # instantiate dataset loader
     dataset = get_dataset(training_cfg, split)
     dataloader = DataLoader(dataset, batch_size=1, shuffle=False,
@@ -453,7 +441,7 @@ def main(dataset_name, experiment_path, device_idx, split='test', save_vis=0, ou
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Evaluate model')
     parser.add_argument('dataset_name', type=str, help='Dataset to evaluate on', 
-                        choices=['objaverse', 'gso', 'cars', 'chairs', 'hydrants', 'teddybears', 'nmr', 'scannetpp'])
+                        choices=['scannetpp'])
     parser.add_argument('--experiment_path', type=str, default=None, help='Path to the parent folder of the model. \
                         If set to None, a pretrained model will be downloaded')
     parser.add_argument('--split', type=str, default='test', choices=['test', 'val', 'vis', 'train'],
