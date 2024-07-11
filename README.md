@@ -2,26 +2,17 @@
 
 <img src="./demo_examples/poster.png"
             alt="Poster."/>
-# Demo
-
-Check out the online [demo](https://huggingface.co/spaces/szymanowiczs/splatter_image). Running the demo locally will often be even faster and you will be able to see the loops rendered with Gaussian Splatting (as opposed to the extracted .ply object which can show artefacts). To run the demo locally, simply follow the installation instructions below, and afterwards call:
-```
-python gradio_app.py
-```
 
 # Installation
 
 1. Create a conda environment: 
 ```
-conda create --name splatter-image
-conda activate splatter-image
+conda create --name splatter-scene
+conda activate splatter-scene
 ```
 
-Install Pytorch following [official instructions](https://pytorch.org). Pytorch / Python / Pytorch3D combination that was verified to work is:
-- Python 3.8, Pytorch 1.13.0, CUDA 11.6, Pytorch3D 0.7.2
-Alternatively, you can create a separate environment with Pytorch3D 0.7.2, which you use just for CO3D data preprocessing. Then, once CO3D had been preprocessed, you can use these combinations of Python / Pytorch too. 
-- Python 3.7, Pytorch 1.12.1, CUDA 11.6
-- Python 3.8, Pytorch 2.1.1, CUDA 12.1
+Install Pytorch following [official instructions](https://pytorch.org). Pytorch / Python combination that was verified to work is:
+- Python 3.8, PyTorch 2.1.1, CUDA 12.4
 
 Install other requirements:
 ```
@@ -81,7 +72,7 @@ Note that Google Scanned Objects dataset is not meant for training. It is used t
 
 ## Pretrained models
 
-Pretrained models for all datasets are now available via [Huggingface Models](https://huggingface.co/szymanowiczs/splatter-image-v1). If you just want to run qualitative / quantitative evaluation, do don't need to dowload them manually, they will be used automatically if you run the evaluation script (see below).
+Pretrained models for all datasets are now available via [Huggingface Models](https://huggingface.co/szymanowiczs/splatter-image-v1). 
 
 You can also download them manually if you wish to do so, by manually clicking the download button on the [Huggingface model files page](https://huggingface.co/szymanowiczs/splatter-image-v1). Download the config file with it and see `eval.py` for how the model is loaded.
 
@@ -90,77 +81,42 @@ You can also download them manually if you wish to do so, by manually clicking t
 
 Once you downloaded the relevant dataset, evaluation can be run with 
 ```
-python eval.py $dataset_name
+python eval.py scannetpp
 ```
-`$dataset_name` is the name of the dataset. We support:
-- `gso` (Google Scanned Objects), 
-- `objaverse` (Objaverse-LVIS), 
-- `nmr` (multi-category ShapeNet), 
-- `hydrants` (CO3D hydrants), 
-- `teddybears` (CO3D teddybears), 
-- `cars` (ShapeNet cars), 
-- `chairs` (ShapeNet chairs).
-The code will automatically download the relevant model for the requested dataset.
 
 You can also train your own models and evaluate it with 
 ```
-python eval.py $dataset_name --experiment_path $experiment_path
+python eval.py scannetpp --experiment_path $experiment_path
 ```
 `$experiment_path` should hold a `model_latest.pth` file and a `.hydra` folder with `config.yaml` inside it.
 
 To evaluate on the validation split, call with option `--split val`.
-
-To save renders of the objects with the camera moving in a loop, call with option `--split vis`. With this option the quantitative scores are not returned since ground truth images are not available in all datasets.
 
 You can set for how many objects to save renders with option `--save_vis`.
 You can set where to save the renders with option `--out_folder`.
 
 ## Training
 
-Single-view models are trained in two stages, first without LPIPS (most of the training), followed by fine-tuning with LPIPS.
-1. The first stage is ran with:
-      ```
-      python train_network.py +dataset=$dataset_name
-      ```
-      where $dataset_name is one of [cars,chairs,hydrants,teddybears,nmr,objaverse].
-      Once it is completed, place the output directory path in configs/experiment/lpips_$experiment_name.yaml in the option `opt.pretrained_ckpt` (by default set to null).
-2. Run second stage with:
-      ```
-      python train_network.py +dataset=$dataset_name +experiment=$lpips_experiment_name
-      ```
-      Which `$lpips_experiment_name` to use depends on the dataset.
-      If $dataset_name is in [cars,hydrants,teddybears], use lpips_100k.yaml.
-      If $dataset_name is chairs, use lpips_200k.yaml.
-      If $dataset_name is nmr, use lpips_nmr.yaml.
-      If $dataset_name is objaverse, use lpips_objaverse.yaml.
-      Remember to place the directory of the model from the first stage in the appropriate .yaml file before launching the second stage.
+Run the training for ScanNet++ with:
+```
+python train_network.py +dataset=scannetpp cam_embd=pose_pos
+```
 
 To train a 2-view model run:
 ```
-python train_network.py +dataset=cars cam_embd=pose_pos data.input_images=2 opt.imgs_per_obj=5
+python train_network.py +dataset=scannetpp cam_embd=pose_pos data.input_images=2 opt.imgs_per_obj=5
 ```
 
 ## Code structure
 
-Training loop is implemented in `train_network.py` and evaluation code is in `eval.py`. Datasets are implemented in `datasets/srn.py` and `datasets/co3d.py`. Model is implemented in `scene/gaussian_predictor.py`. The call to renderer can be found in `gaussian_renderer/__init__.py`.
+Training loop is implemented in `train_network.py` and evaluation code is in `eval.py`. Datasets are implemented in `datasets/ScanNet++.py`. Model is implemented in `scene/gaussian_predictor.py`. The call to renderer can be found in `gaussian_renderer/__init__.py`.
 
 ## Camera conventions
 
 Gaussian rasterizer assumes row-major order of rigid body transform matrices, i.e. that position vectors are row vectors. It also requires cameras in the COLMAP / OpenCV convention, i.e., that x points right, y down, and z away from the camera (forward).
 
-# BibTeX
-
-```
-@inproceedings{szymanowicz24splatter,
-      title={Splatter Image: Ultra-Fast Single-View 3D Reconstruction},
-      author={Stanislaw Szymanowicz and Christian Rupprecht and Andrea Vedaldi},
-      year={2024},
-      booktitle={The IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
-}
-```
-
 # Acknowledgements
 
-S. Szymanowicz is supported by an EPSRC Doctoral Training Partnerships Scholarship (DTP) EP/R513295/1 and the Oxford-Ashton Scholarship.
-A. Vedaldi is supported by ERC-CoG UNION 101001212.
-We thank Eldar Insafutdinov for his help with installation requirements.
+This work is the extension of **"Szymanowicz et al. Splatter Image: Ultra-Fast Single-View 3D Reconstruction" (CVPR 2024)**, from object-level method to a scene-level method. We thank the authors of the original paper for their code structure implementation.
+
+We thank Barbara Roessle for her insightful help during the project period.
