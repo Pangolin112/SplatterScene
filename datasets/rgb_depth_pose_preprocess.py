@@ -3,12 +3,16 @@ import os
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
+import base_path as bp
+
+base_path = bp.srn1_path
+
 # Define the source and destination folders
 scene_name = '355e5e32db'
 
 # rgb
-source_folder = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/{scene_name}/images'
-destination_folder = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/{scene_name}/rgb'
+source_folder = base_path + f'{scene_name}/images'
+destination_folder = base_path + f'{scene_name}/rgb'
 
 for file_name in os.listdir(source_folder):
     if file_name.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif')):  # Check for image files
@@ -75,16 +79,16 @@ def write_matrices(image_poses, output_folder):
 
 
 # Usage
-images_txt_path = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/{scene_name}/colmap/images.txt'
-output_folder = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/{scene_name}/pose_colmap_depth/'
+images_txt_path = base_path + f'{scene_name}/colmap/images.txt'
+output_folder = base_path + f'{scene_name}/pose_colmap_depth/'
 image_poses = parse_images_txt(images_txt_path)
 write_matrices(image_poses, output_folder)
 
 print("Pose extracted and saved successfully.")
 
 # depth
-source_folder = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/{scene_name}/render_depth'
-destination_folder = f'/media/qianru/12T_Data/Data/ScanNetpp/data_1/{scene_name}/depth'
+source_folder = base_path + f'{scene_name}/render_depth'
+destination_folder = base_path + f'{scene_name}/depth'
 
 for file_name in os.listdir(source_folder):
     if file_name.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif')):  # Check for image files

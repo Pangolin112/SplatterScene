@@ -299,8 +299,6 @@ index_list_test = [i for i in range(start, end)]
 ################### another set of focal length ###################
 
 
-
-
 index_dict = {
     'train': index_list_train,
     'val': index_list_val,
