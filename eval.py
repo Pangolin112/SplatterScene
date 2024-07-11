@@ -158,7 +158,7 @@ def evaluate_dataset(model, dataloader, device, model_cfg, save_vis=0, out_folde
 
         rot_transform_quats = data["source_cv2wT_quat"][:, :model_cfg.data.input_images]
 
-        if model_cfg.data.category == "hydrants" or model_cfg.data.category == "teddybears" or model_cfg.data.category == "cars":
+        if model_cfg.data.category == "hydrants" or model_cfg.data.category == "teddybears" or model_cfg.data.category == "cars" or model_cfg.data.category == "scannetpp":
             focals_pixels_pred = data["focals_pixels"][:, :model_cfg.data.input_images, ...]
         else:
             focals_pixels_pred = None
@@ -453,7 +453,7 @@ def main(dataset_name, experiment_path, device_idx, split='test', save_vis=0, ou
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Evaluate model')
     parser.add_argument('dataset_name', type=str, help='Dataset to evaluate on', 
-                        choices=['objaverse', 'gso', 'cars', 'chairs', 'hydrants', 'teddybears', 'nmr'])
+                        choices=['objaverse', 'gso', 'cars', 'chairs', 'hydrants', 'teddybears', 'nmr', 'scannetpp'])
     parser.add_argument('--experiment_path', type=str, default=None, help='Path to the parent folder of the model. \
                         If set to None, a pretrained model will be downloaded')
     parser.add_argument('--split', type=str, default='test', choices=['test', 'val', 'vis', 'train'],

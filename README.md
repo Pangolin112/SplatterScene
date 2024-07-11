@@ -67,7 +67,7 @@ For preprocessing, first undistort and render the depth using colmap following t
 
 ## Pretrained models
 
-Pretrained models training on 35 ScanNet++ scenes are available via [Pretrained Models](https://drive.google.com/drive/folders/1hGTX3XAeV3bd8tpp-CGDJDOdZB9LJrDu?usp=sharing).
+Pretrained models training on 35 ScanNet++ scenes are available via [Pretrained Models](https://drive.google.com/drive/folders/1hGTX3XAeV3bd8tpp-CGDJDOdZB9LJrDu?usp=sharing)(for now the pretrained model's dataset category is still cars, we will upload the version that matches scannetpp).
 
 ## Evaluation
 
@@ -111,4 +111,4 @@ Gaussian rasterizer assumes row-major order of rigid body transform matrices, i.
 
 This work is the extension of **"Szymanowicz et al. Splatter Image: Ultra-Fast Single-View 3D Reconstruction" (CVPR 2024)**, from object-level method to a scene-level method. We thank the authors of the original paper for their code structure implementation.
 
-We thank Barbara Roessle for her insightful help during the project period.
+We thank Barbara Roessle for her insightful advice during the project period.

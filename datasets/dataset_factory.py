@@ -3,6 +3,7 @@ from .co3d import CO3DDataset
 from .nmr import NMRDataset
 from .objaverse import ObjaverseDataset
 from .gso import GSODataset
+from .scannetpp import ScanNetppDataset
 
 def get_dataset(cfg, name):
     if cfg.data.category == "cars" or cfg.data.category == "chairs":
@@ -15,3 +16,5 @@ def get_dataset(cfg, name):
         return ObjaverseDataset(cfg, name)
     elif cfg.data.category == "gso":
         return GSODataset(cfg, name)
+    elif cfg.data.category == "scannetpp":
+        return ScanNetppDataset(cfg, name)

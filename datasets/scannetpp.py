@@ -15,11 +15,11 @@ from utils.graphics_utils import getWorld2View2, getProjectionMatrix, getView2Wo
 from .shared_dataset import SharedDataset
 from . import base_path as bp
 
-SCANNETPP_DATASET_ROOT = bp.SHAPENET_DATASET_ROOT
-assert SCANNETPP_DATASET_ROOT is not None, "Update the location of the SRN Shapenet Dataset"
+SCANNETPP_DATASET_ROOT = bp.SCANNETPP_DATASET_ROOT
+assert SCANNETPP_DATASET_ROOT is not None, "Update the location of the ScanNet++ Dataset"
 
 
-class SRNDataset(SharedDataset):
+class ScanNetppDataset(SharedDataset):
     def __init__(self, cfg,
                  dataset_name="train"):
         super().__init__()
@@ -29,8 +29,7 @@ class SRNDataset(SharedDataset):
         if dataset_name == "vis":
             self.dataset_name = "test"
 
-        self.base_path = os.path.join(SCANNETPP_DATASET_ROOT, "scannetpp_{}/{}_{}".format(cfg.data.category,
-                                                                                   cfg.data.category,
+        self.base_path = os.path.join(SCANNETPP_DATASET_ROOT, "scannetpp/{}_{}".format(cfg.data.category,
                                                                                    self.dataset_name))
 
         is_chair = "chair" in cfg.data.category
