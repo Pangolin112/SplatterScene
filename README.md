@@ -3,6 +3,8 @@
 <img src="./demo_examples/poster.png"
             alt="Poster."/>
 
+[![paper](https://img.shields.io/badge/_-Paper-blue?logo=adobeacrobatreader)](https://github.com/hinczhang/3D-Scanning-and-Motion-Capture/blob/main/report.pdf)&nbsp;&nbsp;
+
 # Installation
 
 First, create a conda environment: 
